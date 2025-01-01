@@ -49,6 +49,24 @@
     </div>
     <div class="folium-map" id="map_b68e2f63d5196a6d0a8179cd86a9ef5c"></div>
 
+    <button id="getLocation" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: rgba(66, 133, 244, 0.7);
+        border: none;
+        outline: none;
+        cursor: pointer;
+        z-index: 1001;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+    ">
+        <i class="fas fa-crosshairs" style="color: white; font-size: 24px;"></i>
+    </button>
+
     <script>
 document.addEventListener('DOMContentLoaded', function() {
     var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c').setView([35.682839, 139.759455], 5);
@@ -106,6 +124,36 @@ document.addEventListener('DOMContentLoaded', function() {
             shadowSize: [41, 41]
         });
     }
+
+    // New function to get current position
+        document.getElementById('getLocation').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    map.setView([lat, lon], 13); // Zoom to current location
+                }, function() {
+                    alert('位置情報を取得できませんでした。');
+                });
+            } else {
+                alert('このブラウザでは位置情報がサポートされていません。');
+            }
+        });
+
+        // Add hover effect for the button
+        document.getElementById('getLocation').addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(51, 103, 214, 0.8)'; // Slightly darker semi-transparent blue on hover
+            this.style.boxShadow = '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)';
+        });
+        document.getElementById('getLocation').addEventListener('mouseleave', function() {
+            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
+            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+        });
+        document.getElementById('getLocation').addEventListener('touchend', function() {
+            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
+            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+        });
+
 });
     </script>
 </body>
