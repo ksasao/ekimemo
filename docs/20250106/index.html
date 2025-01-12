@@ -32,20 +32,34 @@
             outline: none;
             -webkit-tap-highlight-color: rgba(0,0,0,0);
         }
+        /* 表示部分の袋文字スタイル */
+        #marker-count {
+            position: fixed;
+            bottom: 3px;
+            left: 10px;
+            padding: 5px;
+            font-size: 24px;
+            font-weight: bold; 
+            color: white;
+            text-shadow: -2px -2px 0 rgba(0, 0, 0, 0.4), 2px -2px 0 rgba(0, 0, 0, 0.4), -2px 2px 0 rgba(0, 0, 0, 0.4), 2px 2px 0 rgba(0, 0, 0, 0.4); /* 半透明の袋文字 */
+            z-index: 1001; }
     </style>
 </head>
 <body>
     <div style="
-        position: fixed; 
-        bottom: 0px; 
-        left: 0px; 
-        background-color: white; 
-        padding: 0px; 
-        border: 0px solid white; 
-        font-size: 10px; 
+        position: fixed;
+        bottom: 0px;
+        left: 0px;
+        background-color: white;
+        padding: 0px;
+        border: 0px solid white;
+        font-size: 10px;
         z-index: 1000;
     ">
         駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank">駅データ</a> を利用しています
+    </div>
+    <div id="marker-count">
+        <span id="red-markers-count" style="font-size: 48px;">0</span>/<span id="total-markers-count">0</span>
     </div>
     <div class="folium-map" id="map_b68e2f63d5196a6d0a8179cd86a9ef5c"></div>
 
@@ -68,64 +82,86 @@
     </button>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c').setView([35.682839, 139.759455], 5);
-    
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-    
-    var markerData = [{"lat": 42.957499, "lon": 142.906646, "name": "羽帯"}, {"lat": 43.324867, "lon": 141.61807, "name": "月ヶ岡"}, {"lat": 43.340869, "lon": 141.670193, "name": "石狩月形"}, {"lat": 38.836748, "lon": 140.242247, "name": "羽前豊里"}, {"lat": 39.618679, "lon": 140.320722, "name": "羽後境"}, {"lat": 39.898981, "lon": 140.0733, "name": "羽後飯塚"}, {"lat": 38.915598, "lon": 141.488796, "name": "新月"}, {"lat": 39.546003, "lon": 140.540448, "name": "羽後長野"}, {"lat": 39.501511, "lon": 140.511886, "name": "羽後四ツ屋"}, {"lat": 37.889334, "lon": 139.272488, "name": "月岡(新潟)"}, {"lat": 38.713444, "lon": 139.731372, "name": "羽前水沢"}, {"lat": 38.742155, "lon": 139.768194, "name": "羽前大山"}, {"lat": 39.386877, "lon": 140.057632, "name": "羽後本荘"}, {"lat": 39.442075, "lon": 140.0906, "name": "羽後岩谷"}, {"lat": 39.493884, "lon": 140.063032, "name": "羽後亀田"}, {"lat": 39.695834, "lon": 140.116467, "name": "羽後牛島"}, {"lat": 39.904569, "lon": 139.86205, "name": "羽立"}, {"lat": 38.124158, "lon": 140.218318, "name": "羽前中山"}, {"lat": 38.287313, "lon": 140.342168, "name": "羽前千歳"}, {"lat": 38.302834, "lon": 140.344692, "name": "南出羽"}, {"lat": 38.294756, "lon": 140.271571, "name": "羽前山辺"}, {"lat": 38.320837, "lon": 140.270516, "name": "羽前金沢"}, {"lat": 38.332969, "lon": 140.273018, "name": "羽前長崎"}, {"lat": 38.397494, "lon": 140.248666, "name": "羽前高松"}, {"lat": 38.004721, "lon": 140.048503, "name": "羽前小松"}, {"lat": 38.038636, "lon": 139.994293, "name": "羽前椿"}, {"lat": 38.028698, "lon": 139.872497, "name": "羽前沼沢"}, {"lat": 38.045391, "lon": 139.780445, "name": "羽前松岡"}, {"lat": 38.747654, "lon": 140.209525, "name": "羽前前波"}, {"lat": 38.708948, "lon": 140.835732, "name": "池月"}, {"lat": 35.613222, "lon": 138.942729, "name": "大月"}, {"lat": 35.758073, "lon": 139.316188, "name": "羽村"}, {"lat": 35.778026, "lon": 139.720928, "name": "赤羽"}, {"lat": 36.247661, "lon": 140.28679, "name": "羽鳥"}, {"lat": 35.787007, "lon": 139.70569, "name": "北赤羽"}, {"lat": 36.550164, "lon": 138.605502, "name": "羽根尾"}, {"lat": 36.355292, "lon": 140.142947, "name": "羽黒(茨城)"}, {"lat": 36.166411, "lon": 138.489618, "name": "羽黒下"}, {"lat": 37.693613, "lon": 139.060715, "name": "羽生田"}, {"lat": 37.430047, "lon": 138.61955, "name": "刈羽"}, {"lat": 35.114988, "lon": 137.854345, "name": "相月"}, {"lat": 35.953094, "lon": 137.985126, "name": "羽場(長野)"}, {"lat": 35.470337, "lon": 136.237716, "name": "高月"}, {"lat": 36.870324, "lon": 136.774631, "name": "南羽咋"}, {"lat": 36.897073, "lon": 136.783332, "name": "羽咋"}, {"lat": 36.020821, "lon": 136.253607, "name": "足羽"}, {"lat": 35.504839, "lon": 135.866872, "name": "大鳥羽"}, {"lat": 34.762813, "lon": 136.023703, "name": "月ヶ瀬口"}, {"lat": 34.486516, "lon": 136.84279, "name": "鳥羽"}, {"lat": 34.067907, "lon": 131.033038, "name": "小月"}, {"lat": 34.755491, "lon": 135.653276, "name": "寝屋川公園"}, {"lat": 34.665582, "lon": 135.479932, "name": "大正(大阪)"}, {"lat": 34.535029, "lon": 135.442824, "name": "東羽衣"}, {"lat": 34.534546, "lon": 135.44178, "name": "羽衣"}, {"lat": 34.984846, "lon": 134.435318, "name": "三日月"}, {"lat": 34.983425, "lon": 134.32251, "name": "上月"}, {"lat": 35.048195, "lon": 133.666839, "name": "月田"}, {"lat": 34.715716, "lon": 133.689993, "name": "日羽"}, {"lat": 34.884442, "lon": 132.671234, "name": "口羽"}, {"lat": 34.280005, "lon": 134.274003, "name": "鶴羽"}, {"lat": 33.957293, "lon": 134.626183, "name": "羽ノ浦"}, {"lat": 33.194815, "lon": 132.975612, "name": "土佐大正"}, {"lat": 33.209822, "lon": 130.49761, "name": "羽犬塚"}, {"lat": 31.254339, "lon": 130.630082, "name": "二月田"}, {"lat": 36.14959, "lon": 139.55696, "name": "南羽生"}, {"lat": 36.170345, "lon": 139.533949, "name": "羽生"}, {"lat": 35.938324, "lon": 139.181521, "name": "正丸"}, {"lat": 35.668288, "lon": 139.485019, "name": "府中競馬正門前"}, {"lat": 35.600174, "lon": 139.493542, "name": "五月台"}, {"lat": 35.500358, "lon": 139.672813, "name": "花月総持寺"}, {"lat": 35.544913, "lon": 139.767217, "name": "羽田空港第３ターミナル(京浜急行電鉄)"}, {"lat": 35.549809, "lon": 139.785962, "name": "羽田空港第１・第２ターミナル"}, {"lat": 35.549163, "lon": 139.784653, "name": "羽田空港第１ターミナル"}, {"lat": 35.550734, "lon": 139.787979, "name": "羽田空港第２ターミナル"}, {"lat": 35.664871, "lon": 139.784233, "name": "月島"}, {"lat": 35.783417, "lon": 139.722103, "name": "赤羽岩淵"}, {"lat": 35.481206, "lon": 139.586102, "name": "羽沢横浜国大"}, {"lat": 34.793214, "lon": 137.104984, "name": "三河鳥羽"}, {"lat": 35.40119, "lon": 136.921535, "name": "羽場(岐阜)"}, {"lat": 35.351519, "lon": 136.952486, "name": "羽黒(愛知)"}, {"lat": 35.321924, "lon": 136.70003, "name": "羽島市役所前"}, {"lat": 35.315471, "lon": 136.686582, "name": "新羽島"}, {"lat": 35.315092, "lon": 136.597382, "name": "大外羽"}, {"lat": 35.012521, "lon": 136.49417, "name": "大羽根園"}, {"lat": 34.965135, "lon": 135.752625, "name": "上鳥羽口"}, {"lat": 34.955816, "lon": 136.61873, "name": "新正"}, {"lat": 34.399346, "lon": 135.299484, "name": "羽倉崎"}, {"lat": 34.973632, "lon": 135.770004, "name": "鳥羽街道"}, {"lat": 34.763893, "lon": 135.620603, "name": "寝屋川市"}, {"lat": 34.928103, "lon": 135.768642, "name": "観月橋"}, {"lat": 34.775454, "lon": 135.545657, "name": "正雀"}, {"lat": 43.030553, "lon": 141.396263, "name": "月寒中央"}, {"lat": 39.711131, "lon": 141.935868, "name": "佐羽根"}, {"lat": 39.771049, "lon": 140.602775, "name": "羽後中里"}, {"lat": 39.727689, "lon": 140.565383, "name": "羽後長戸呂"}, {"lat": 39.627304, "lon": 140.574249, "name": "羽後太田"}, {"lat": 38.131038, "lon": 140.034987, "name": "羽前成田"}, {"lat": 35.655007, "lon": 139.743642, "name": "赤羽橋"}, {"lat": 36.17635, "lon": 139.523986, "name": "西羽生"}, {"lat": 35.527701, "lon": 139.612065, "name": "新羽"}, {"lat": 35.949941, "lon": 139.619443, "name": "今羽"}, {"lat": 36.007311, "lon": 139.608608, "name": "羽貫"}, {"lat": 35.302203, "lon": 140.139394, "name": "月崎"}, {"lat": 35.609341, "lon": 138.938128, "name": "上大月"}, {"lat": 35.493313, "lon": 138.798105, "name": "月江寺"}, {"lat": 36.784082, "lon": 137.372079, "name": "早月加積"}, {"lat": 36.815694, "lon": 137.583541, "name": "宇奈月温泉"}, {"lat": 36.815038, "lon": 137.58586, "name": "宇奈月"}, {"lat": 36.626475, "lon": 137.263341, "name": "月岡(富山)"}, {"lat": 36.493628, "lon": 136.614869, "name": "陽羽里"}, {"lat": 35.981522, "lon": 136.187556, "name": "鳥羽中"}, {"lat": 36.057737, "lon": 136.215109, "name": "足羽山公園口"}, {"lat": 36.718845, "lon": 137.164874, "name": "呉羽"}, {"lat": 34.978387, "lon": 138.395775, "name": "音羽町"}, {"lat": 35.387222, "lon": 137.437468, "name": "飯羽間"}, {"lat": 34.649992, "lon": 135.121949, "name": "月見山"}, {"lat": 34.241078, "lon": 133.901782, "name": "羽床"}, {"lat": 34.209571, "lon": 133.847345, "name": "羽間"}, {"lat": 33.799502, "lon": 130.719099, "name": "筑豊香月"}, {"lat": 32.860303, "lon": 130.225482, "name": "大正(長崎)"}, {"lat": 32.275372, "lon": 130.966275, "name": "新鶴羽"}, {"lat": 35.3158, "lon": 136.6855, "name": "岐阜羽島"}, {"lat": 36.874106, "lon": 137.481113, "name": "黒部宇奈月温泉"}, {"lat": 39.280611, "lon": 140.449694, "name": "羽後里見"}, {"lat": 39.338722, "lon": 140.422194, "name": "羽後大森"}, {"lat": 39.164722, "lon": 140.465028, "name": "羽後山田"}, {"lat": 39.193722, "lon": 140.438083, "name": "羽後三輪"}, {"lat": 34.440028, "lon": 133.806556, "name": "鷲羽山"}, {"lat": 32.032028, "lon": 130.596583, "name": "羽月"}, {"lat": 35.544169, "lon": 139.768206, "name": "羽田空港第３ターミナル(東京モノレール)"}, {"lat": 38.862278, "lon": 141.584076, "name": "岩月"}];
-    
-    markerData.forEach(function(data) {
-        var key = data.lat + "_" + data.lon;
-        var nameHtml = data.name;
-        var filterStr = "羽寝正月";
-        for (var i = 0; i < filterStr.length; i++) {
-            var char = filterStr[i];
-            nameHtml = nameHtml.replace(new RegExp(char, 'g'), "<b style='color:red;'>" + char + "</b>");
-        }
-
-        var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
-        var marker = L.marker([data.lat, data.lon], { icon: createMarkerIcon(color) }).addTo(map)
-            .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
-
+    document.addEventListener('DOMContentLoaded', function() {
+        var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c').setView([35.682839, 139.759455], 5);
         
-        // ダブルタップイベント
-        marker.on('dblclick', function() {
-            toggleMarkerColor(key, marker);
-        });
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        var markerData = [{"lat": 42.957499, "lon": 142.906646, "name": "羽帯", "name_kana": "はおび"}, {"lat": 43.324867, "lon": 141.61807, "name": "月ヶ岡", "name_kana": "つきがおか"}, {"lat": 43.340869, "lon": 141.670193, "name": "石狩月形", "name_kana": "いしかりつきがた"}, {"lat": 38.836748, "lon": 140.242247, "name": "羽前豊里", "name_kana": "うぜんとよさと"}, {"lat": 39.618679, "lon": 140.320722, "name": "羽後境", "name_kana": "うごさかい"}, {"lat": 39.898981, "lon": 140.0733, "name": "羽後飯塚", "name_kana": "うごいいづか"}, {"lat": 38.915598, "lon": 141.488796, "name": "新月", "name_kana": "にいつき"}, {"lat": 39.546003, "lon": 140.540448, "name": "羽後長野", "name_kana": "うごながの"}, {"lat": 39.501511, "lon": 140.511886, "name": "羽後四ツ屋", "name_kana": "うごよつや"}, {"lat": 37.889334, "lon": 139.272488, "name": "月岡(新潟)", "name_kana": "つきおか"}, {"lat": 38.713444, "lon": 139.731372, "name": "羽前水沢", "name_kana": "うぜんみずさわ"}, {"lat": 38.742155, "lon": 139.768194, "name": "羽前大山", "name_kana": "うぜんおおやま"}, {"lat": 39.386877, "lon": 140.057632, "name": "羽後本荘", "name_kana": "うごほんじょう"}, {"lat": 39.442075, "lon": 140.0906, "name": "羽後岩谷", "name_kana": "うごいわや"}, {"lat": 39.493884, "lon": 140.063032, "name": "羽後亀田", "name_kana": "うごかめだ"}, {"lat": 39.695834, "lon": 140.116467, "name": "羽後牛島", "name_kana": "うごうしじま"}, {"lat": 39.904569, "lon": 139.86205, "name": "羽立", "name_kana": "はだち"}, {"lat": 38.124158, "lon": 140.218318, "name": "羽前中山", "name_kana": "うぜんなかやま"}, {"lat": 38.287313, "lon": 140.342168, "name": "羽前千歳", "name_kana": "うぜんちとせ"}, {"lat": 38.302834, "lon": 140.344692, "name": "南出羽", "name_kana": "みなみでわ"}, {"lat": 38.294756, "lon": 140.271571, "name": "羽前山辺", "name_kana": "うぜんやまべ"}, {"lat": 38.320837, "lon": 140.270516, "name": "羽前金沢", "name_kana": "うぜんかねざわ"}, {"lat": 38.332969, "lon": 140.273018, "name": "羽前長崎", "name_kana": "うぜんながさき"}, {"lat": 38.397494, "lon": 140.248666, "name": "羽前高松", "name_kana": "うぜんたかまつ"}, {"lat": 38.004721, "lon": 140.048503, "name": "羽前小松", "name_kana": "うぜんこまつ"}, {"lat": 38.038636, "lon": 139.994293, "name": "羽前椿", "name_kana": "うぜんつばき"}, {"lat": 38.028698, "lon": 139.872497, "name": "羽前沼沢", "name_kana": "うぜんぬまざわ"}, {"lat": 38.045391, "lon": 139.780445, "name": "羽前松岡", "name_kana": "うぜんまつおか"}, {"lat": 38.747654, "lon": 140.209525, "name": "羽前前波", "name_kana": "うぜんぜんなみ"}, {"lat": 38.708948, "lon": 140.835732, "name": "池月", "name_kana": "いけづき"}, {"lat": 35.613222, "lon": 138.942729, "name": "大月", "name_kana": "おおつき"}, {"lat": 35.758073, "lon": 139.316188, "name": "羽村", "name_kana": "はむら"}, {"lat": 35.778026, "lon": 139.720928, "name": "赤羽", "name_kana": "あかばね"}, {"lat": 36.247661, "lon": 140.28679, "name": "羽鳥", "name_kana": "はとり"}, {"lat": 35.787007, "lon": 139.70569, "name": "北赤羽", "name_kana": "きたあかばね"}, {"lat": 36.550164, "lon": 138.605502, "name": "羽根尾", "name_kana": "はねお"}, {"lat": 36.355292, "lon": 140.142947, "name": "羽黒(茨城)", "name_kana": "はぐろ"}, {"lat": 36.166411, "lon": 138.489618, "name": "羽黒下", "name_kana": "はぐろした"}, {"lat": 37.693613, "lon": 139.060715, "name": "羽生田", "name_kana": "はにゅうだ"}, {"lat": 37.430047, "lon": 138.61955, "name": "刈羽", "name_kana": "かりわ"}, {"lat": 35.114988, "lon": 137.854345, "name": "相月", "name_kana": "あいづき"}, {"lat": 35.953094, "lon": 137.985126, "name": "羽場(長野)", "name_kana": "はば"}, {"lat": 35.470337, "lon": 136.237716, "name": "高月", "name_kana": "たかつき"}, {"lat": 36.870324, "lon": 136.774631, "name": "南羽咋", "name_kana": "みなみはくい"}, {"lat": 36.897073, "lon": 136.783332, "name": "羽咋", "name_kana": "はくい"}, {"lat": 36.020821, "lon": 136.253607, "name": "足羽", "name_kana": "あすわ"}, {"lat": 35.504839, "lon": 135.866872, "name": "大鳥羽", "name_kana": "おおとば"}, {"lat": 34.762813, "lon": 136.023703, "name": "月ヶ瀬口", "name_kana": "つきがせぐち"}, {"lat": 34.486516, "lon": 136.84279, "name": "鳥羽", "name_kana": "とば"}, {"lat": 34.067907, "lon": 131.033038, "name": "小月", "name_kana": "おづき"}, {"lat": 34.755491, "lon": 135.653276, "name": "寝屋川公園", "name_kana": "ねやがわこうえん"}, {"lat": 34.665582, "lon": 135.479932, "name": "大正(大阪)", "name_kana": "たいしょう"}, {"lat": 34.535029, "lon": 135.442824, "name": "東羽衣", "name_kana": "ひがしはごろも"}, {"lat": 34.534546, "lon": 135.44178, "name": "羽衣", "name_kana": "はごろも"}, {"lat": 34.984846, "lon": 134.435318, "name": "三日月", "name_kana": "みかづき"}, {"lat": 34.983425, "lon": 134.32251, "name": "上月", "name_kana": "こうづき"}, {"lat": 35.048195, "lon": 133.666839, "name": "月田", "name_kana": "つきだ"}, {"lat": 34.715716, "lon": 133.689993, "name": "日羽", "name_kana": "ひわ"}, {"lat": 34.884442, "lon": 132.671234, "name": "口羽", "name_kana": "くちば"}, {"lat": 34.280005, "lon": 134.274003, "name": "鶴羽", "name_kana": "つるわ"}, {"lat": 33.957293, "lon": 134.626183, "name": "羽ノ浦", "name_kana": "はのうら"}, {"lat": 33.194815, "lon": 132.975612, "name": "土佐大正", "name_kana": "とさたいしょう"}, {"lat": 33.209822, "lon": 130.49761, "name": "羽犬塚", "name_kana": "はいぬづか"}, {"lat": 31.254339, "lon": 130.630082, "name": "二月田", "name_kana": "にがつでん"}, {"lat": 36.14959, "lon": 139.55696, "name": "南羽生", "name_kana": "みなみはにゅう"}, {"lat": 36.170345, "lon": 139.533949, "name": "羽生", "name_kana": "はにゅう"}, {"lat": 35.938324, "lon": 139.181521, "name": "正丸", "name_kana": "しょうまる"}, {"lat": 35.668288, "lon": 139.485019, "name": "府中競馬正門前", "name_kana": "ふちゅうけいばせいもんまえ"}, {"lat": 35.600174, "lon": 139.493542, "name": "五月台", "name_kana": "さつきだい"}, {"lat": 35.500358, "lon": 139.672813, "name": "花月総持寺", "name_kana": "かげつそうじじ"}, {"lat": 35.544913, "lon": 139.767217, "name": "羽田空港第３ターミナル(京浜急行電鉄)", "name_kana": "はねだくうこうだいさんたーみなる"}, {"lat": 35.549809, "lon": 139.785962, "name": "羽田空港第１・第２ターミナル", "name_kana": "はねだくうこうだいいち・だいにたーみなる"}, {"lat": 35.549163, "lon": 139.784653, "name": "羽田空港第１ターミナル", "name_kana": "はねだくうこうだいいちたーみなる"}, {"lat": 35.550734, "lon": 139.787979, "name": "羽田空港第２ターミナル", "name_kana": "はねだくうこうだいにたーみなる"}, {"lat": 35.664871, "lon": 139.784233, "name": "月島", "name_kana": "つきしま"}, {"lat": 35.783417, "lon": 139.722103, "name": "赤羽岩淵", "name_kana": "あかばねいわぶち"}, {"lat": 35.481206, "lon": 139.586102, "name": "羽沢横浜国大", "name_kana": "はざわよこはまこくだい"}, {"lat": 34.793214, "lon": 137.104984, "name": "三河鳥羽", "name_kana": "みかわとば"}, {"lat": 35.40119, "lon": 136.921535, "name": "羽場(岐阜)", "name_kana": "はば"}, {"lat": 35.351519, "lon": 136.952486, "name": "羽黒(愛知)", "name_kana": "はぐろ"}, {"lat": 35.321924, "lon": 136.70003, "name": "羽島市役所前", "name_kana": "はしましやくしょまえ"}, {"lat": 35.315471, "lon": 136.686582, "name": "新羽島", "name_kana": "しんはしま"}, {"lat": 35.315092, "lon": 136.597382, "name": "大外羽", "name_kana": "おおとば"}, {"lat": 35.012521, "lon": 136.49417, "name": "大羽根園", "name_kana": "おおばねえん"}, {"lat": 34.965135, "lon": 135.752625, "name": "上鳥羽口", "name_kana": "かみとばぐち"}, {"lat": 34.955816, "lon": 136.61873, "name": "新正", "name_kana": "しんしょう"}, {"lat": 34.399346, "lon": 135.299484, "name": "羽倉崎", "name_kana": "はぐらざき"}, {"lat": 34.973632, "lon": 135.770004, "name": "鳥羽街道", "name_kana": "とばかいどう"}, {"lat": 34.763893, "lon": 135.620603, "name": "寝屋川市", "name_kana": "ねやがわし"}, {"lat": 34.928103, "lon": 135.768642, "name": "観月橋", "name_kana": "かんげつきょう"}, {"lat": 34.775454, "lon": 135.545657, "name": "正雀", "name_kana": "しょうじゃく"}, {"lat": 43.030553, "lon": 141.396263, "name": "月寒中央", "name_kana": "つきさむちゅうおう"}, {"lat": 39.711131, "lon": 141.935868, "name": "佐羽根", "name_kana": "さばね"}, {"lat": 39.771049, "lon": 140.602775, "name": "羽後中里", "name_kana": "うごなかざと"}, {"lat": 39.727689, "lon": 140.565383, "name": "羽後長戸呂", "name_kana": "うごながとろ"}, {"lat": 39.627304, "lon": 140.574249, "name": "羽後太田", "name_kana": "うごおおた"}, {"lat": 38.131038, "lon": 140.034987, "name": "羽前成田", "name_kana": "うぜんなりた"}, {"lat": 35.655007, "lon": 139.743642, "name": "赤羽橋", "name_kana": "あかばねばし"}, {"lat": 36.17635, "lon": 139.523986, "name": "西羽生", "name_kana": "にしはにゅう"}, {"lat": 35.527701, "lon": 139.612065, "name": "新羽", "name_kana": "にっぱ"}, {"lat": 35.949941, "lon": 139.619443, "name": "今羽", "name_kana": "こんば"}, {"lat": 36.007311, "lon": 139.608608, "name": "羽貫", "name_kana": "はぬき"}, {"lat": 35.302203, "lon": 140.139394, "name": "月崎", "name_kana": "つきざき"}, {"lat": 35.609341, "lon": 138.938128, "name": "上大月", "name_kana": "かみおおつき"}, {"lat": 35.493313, "lon": 138.798105, "name": "月江寺", "name_kana": "げっこうじ"}, {"lat": 36.784082, "lon": 137.372079, "name": "早月加積", "name_kana": "はやつきかづみ"}, {"lat": 36.815694, "lon": 137.583541, "name": "宇奈月温泉", "name_kana": "うなづきおんせん"}, {"lat": 36.815038, "lon": 137.58586, "name": "宇奈月", "name_kana": "うなづき"}, {"lat": 36.626475, "lon": 137.263341, "name": "月岡(富山)", "name_kana": "つきおか"}, {"lat": 36.493628, "lon": 136.614869, "name": "陽羽里", "name_kana": "ひばり"}, {"lat": 35.981522, "lon": 136.187556, "name": "鳥羽中", "name_kana": "とばなか"}, {"lat": 36.057737, "lon": 136.215109, "name": "足羽山公園口", "name_kana": "あすわやまこうえんぐち"}, {"lat": 36.718845, "lon": 137.164874, "name": "呉羽", "name_kana": "くれは"}, {"lat": 34.978387, "lon": 138.395775, "name": "音羽町", "name_kana": "おとわちょう"}, {"lat": 35.387222, "lon": 137.437468, "name": "飯羽間", "name_kana": "いいばま"}, {"lat": 34.649992, "lon": 135.121949, "name": "月見山", "name_kana": "つきみやま"}, {"lat": 34.241078, "lon": 133.901782, "name": "羽床", "name_kana": "はゆか"}, {"lat": 34.209571, "lon": 133.847345, "name": "羽間", "name_kana": "はざま"}, {"lat": 33.799502, "lon": 130.719099, "name": "筑豊香月", "name_kana": "ちくほうかつき"}, {"lat": 32.860303, "lon": 130.225482, "name": "大正(長崎)", "name_kana": "たいしょう"}, {"lat": 32.275372, "lon": 130.966275, "name": "新鶴羽", "name_kana": "しんつるば"}, {"lat": 35.3158, "lon": 136.6855, "name": "岐阜羽島", "name_kana": "ぎふはしま"}, {"lat": 36.874106, "lon": 137.481113, "name": "黒部宇奈月温泉", "name_kana": "くろべうなづきおんせん"}, {"lat": 39.280611, "lon": 140.449694, "name": "羽後里見", "name_kana": "うごさとみ"}, {"lat": 39.338722, "lon": 140.422194, "name": "羽後大森", "name_kana": "うごおおもり"}, {"lat": 39.164722, "lon": 140.465028, "name": "羽後山田", "name_kana": "うごやまだ"}, {"lat": 39.193722, "lon": 140.438083, "name": "羽後三輪", "name_kana": "うごみわ"}, {"lat": 34.440028, "lon": 133.806556, "name": "鷲羽山", "name_kana": "わしうざん"}, {"lat": 32.032028, "lon": 130.596583, "name": "羽月", "name_kana": "はつき"}, {"lat": 35.544169, "lon": 139.768206, "name": "羽田空港第３ターミナル(東京モノレール)", "name_kana": "はねだくうこうだいさんたーみなる"}, {"lat": 38.862278, "lon": 141.584076, "name": "岩月", "name_kana": "いわつき"}];
+        var redMarkerCount = 0;
+        var totalMarkerCount = markerData.length;
 
-        marker.on('touchend', function(e) {
-            if (e.originalEvent.detail === 2) { // ダブルタップ判定
-                toggleMarkerColor(key, marker);
+        // 既存のredマーカーのカウント
+        markerData.forEach(function(data) {
+            var key = data.lat + "_" + data.lon;
+            var storedColor = localStorage.getItem(key);
+            if (storedColor === 'red') {
+                redMarkerCount++;
             }
         });
 
-    });
+        updateMarkerCount();
 
-    function toggleMarkerColor(key, marker) {
-        if (localStorage.getItem(key) === 'red') {
-            marker.setIcon(createMarkerIcon('blue'));
-            localStorage.removeItem(key);
-        } else {
-            marker.setIcon(createMarkerIcon('red'));
-            localStorage.setItem(key, 'red');
-        }
-    }
+        markerData.forEach(function(data) {
+            var key = data.lat + "_" + data.lon;
+            var nameHtml = `<div style="font-size: 16px;">${data.name}</div><div>${data.name_kana}</div>`;
+            var filterStr = "羽寝正月";
+            for (var i = 0; i < filterStr.length; i++) {
+                var char = filterStr[i];
+                nameHtml = nameHtml.replace(new RegExp(char, 'g'), "<b style='color:red;'>" + char + "</b>");
+            }
 
-    function createMarkerIcon(color) {
-        return new L.Icon({
-            iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
+            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
+//            if (color === 'red') redMarkerCount++;
+            var marker = L.marker([data.lat, data.lon], { icon: createMarkerIcon(color) }).addTo(map)
+                .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
+
+            
+            // ダブルタップイベント
+            marker.on('dblclick', function() {
+                toggleMarkerColor(key, marker);
+            });
+
+            marker.on('touchend', function(e) {
+                if (e.originalEvent.detail === 2) { // ダブルタップ判定
+                    toggleMarkerColor(key, marker);
+                }
+            });
+
         });
-    }
 
-    // New function to get current position
+        function toggleMarkerColor(key, marker) {
+            if (localStorage.getItem(key) === 'red') {
+                marker.setIcon(createMarkerIcon('blue'));
+                localStorage.removeItem(key);
+                redMarkerCount--;
+            } else {
+                marker.setIcon(createMarkerIcon('red'));
+                localStorage.setItem(key, 'red');
+                redMarkerCount++;
+            }
+            updateMarkerCount();
+        }
+
+        function createMarkerIcon(color) {
+            return new L.Icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        function updateMarkerCount() {
+            document.getElementById('red-markers-count').textContent = redMarkerCount;
+            document.getElementById('total-markers-count').textContent = totalMarkerCount;
+        }
+
+        // 現在地を取得
         document.getElementById('getLocation').addEventListener('click', function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(function(position) {
@@ -140,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Add hover effect for the button
+        // ボタンのエフェクト
         document.getElementById('getLocation').addEventListener('mouseenter', function() {
             this.style.backgroundColor = 'rgba(51, 103, 214, 0.8)'; // Slightly darker semi-transparent blue on hover
             this.style.boxShadow = '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)';
@@ -154,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
         });
 
-});
+    });
     </script>
 </body>
 </html>
