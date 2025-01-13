@@ -84,7 +84,11 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c').setView([35.682839, 139.759455], 5);
+        var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c', {
+            zoomSnap: 0.1, // 0.1単位でズームレベルが変わる 
+            zoomDelta: 0.1, // マウスホイールで0.1単位でズーム
+            wheelPxPerZoomLevel: 120 // スムーズなズーム
+        }).setView([35.682839, 139.759455], 5);
         
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
