@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script>
+        L_NO_TOUCH = false;
+        L_DISABLE_3D = false;
+    </script>
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>駅メモ！対象駅 2024/06/26-2025/5/23 - でんこと全国各地の駅におでかけしようキャンペーン～10周年ver.～</title>
+    <style>
+        #map_b68e2f63d5196a6d0a8179cd86a9ef5c {
+            position: relative;
+            width: 100.0%;
+            height: 100.0%;
+            left: 0.0%;
+            top: 0.0%;
+        }
+        .leaflet-container { font-size: 1rem; }
+        .leaflet-marker-icon {
+            touch-action: none;
+        }
+        .leaflet-marker-icon:active {
+            outline: none;
+            -webkit-tap-highlight-color: rgba(0,0,0,0);
+        }
+        /* 表示部分の袋文字スタイル */
+        #marker-count {
+            position: fixed;
+            bottom: 3px;
+            left: 10px;
+            padding: 5px;
+            font-size: 24px;
+            font-weight: bold; 
+            color: white;
+            text-shadow:  1px 1px 4px rgba(0, 0, 0, 0.9);
+            z-index: 1001; }
+    </style>
+</head>
+<body>
+    <div style="
+        position: fixed;
+        bottom: 0px;
+        left: 0px;
+        background-color: white;
+        padding: 0px;
+        border: 0px solid white;
+        font-size: 10px;
+        z-index: 1000;
+    ">
+        駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank">駅データ</a> を利用しています
+    </div>
+    <div id="marker-count">
+        <span id="red-markers-count" style="font-size: 48px;">0</span>/<span id="total-markers-count">0</span>
+    </div>
+    <div class="folium-map" id="map_b68e2f63d5196a6d0a8179cd86a9ef5c"></div>
+
+    <button id="getLocation" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: rgba(66, 133, 244, 0.7);
+        border: none;
+        outline: none;
+        cursor: pointer;
+        z-index: 1001;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+    ">
+        <i class="fas fa-crosshairs" style="color: white; font-size: 24px;"></i>
+    </button>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c', {
+            zoomSnap: 0.1, // 0.1単位でズームレベルが変わる 
+            zoomDelta: 0.1, // マウスホイールで0.1単位でズーム
+            wheelPxPerZoomLevel: 120 // スムーズなズーム
+        }).setView([35.682839, 139.759455], 4.5);
+        
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        var markerData = [{"area": 0, "station": "美深", "station_kana": "びふか", "denco": "ふぶ", "lat": 44.482951, "lng": 142.350597, "radius": 0, "count": 1}, {"area": 0, "station": "美唄", "station_kana": "びばい", "denco": "イムラ", "lat": 43.330751, "lng": 141.862157, "radius": 0, "count": 1}, {"area": 0, "station": "八雲", "station_kana": "やくも", "denco": "レーノ", "lat": 42.253391, "lng": 140.273342, "radius": 0, "count": 1}, {"area": 0, "station": "神居古潭", "station_kana": "かむいこたん", "denco": "コタン", "lat": 43.732833, "lng": 142.202222, "radius": 0, "count": 1}, {"area": 0, "station": "木古内", "station_kana": "きこない", "denco": "さいか", "lat": 41.677642, "lng": 140.434004, "radius": 0, "count": 1}, {"area": 0, "station": "茅沼", "station_kana": "かやぬま", "denco": "みゆき", "lat": 43.202097, "lng": 144.503788, "radius": 0, "count": 1}, {"area": 1, "station": "恋し浜", "station_kana": "こいしはま", "denco": "みろく", "lat": 39.07453, "lng": 141.816365, "radius": 0, "count": 1}, {"area": 1, "station": "新利府", "station_kana": "しんりふ", "denco": "レイカ", "lat": 38.317059, "lng": 140.972609, "radius": 0, "count": 1}, {"area": 1, "station": "象潟", "station_kana": "きさかた", "denco": "いろは", "lat": 39.2078, "lng": 139.902205, "radius": 0, "count": 1}, {"area": 1, "station": "碇ヶ関", "station_kana": "いかりがせき", "denco": "ひいる", "lat": 40.478988, "lng": 140.622443, "radius": 0, "count": 1}, {"area": 1, "station": "小鳥谷", "station_kana": "こずや", "denco": "スピカ", "lat": 40.171061, "lng": 141.307735, "radius": 0, "count": 1}, {"area": 1, "station": "勿来", "station_kana": "なこそ", "denco": "メイ", "lat": 36.883883, "lng": 140.786506, "radius": 0, "count": 1}, {"area": 1, "station": "角館", "station_kana": "かくのだて", "denco": "あけひ", "lat": 39.591716, "lng": 140.570988, "radius": 0, "count": 1}, {"area": 1, "station": "かみのやま温泉", "station_kana": "かみのやまおんせん", "denco": "ゆのか", "lat": 38.152259, "lng": 140.27867, "radius": 0, "count": 1}, {"area": 1, "station": "岩切", "station_kana": "いわきり", "denco": "よしの", "lat": 38.300773, "lng": 140.954617, "radius": 0, "count": 1}, {"area": 1, "station": "鮎川", "station_kana": "あゆかわ", "denco": "ひな", "lat": 39.328693, "lng": 140.071254, "radius": 0, "count": 1}, {"area": 1, "station": "新鶴", "station_kana": "にいつる", "denco": "まふゆ", "lat": 37.517161, "lng": 139.828499, "radius": 0, "count": 1}, {"area": 1, "station": "八戸", "station_kana": "はちのへ", "denco": "ましろ", "lat": 40.5092, "lng": 141.431499, "radius": 0, "count": 1}, {"area": 1, "station": "青森", "station_kana": "あおもり", "denco": "せいらん", "lat": 40.828668, "lng": 140.734738, "radius": 0, "count": 1}, {"area": 1, "station": "白兎", "station_kana": "しろうさぎ", "denco": "ももな", "lat": 38.149984, "lng": 140.041013, "radius": 0, "count": 1}, {"area": 1, "station": "五所川原", "station_kana": "ごしょがわら", "denco": "べにか", "lat": 40.809124, "lng": 140.44776, "radius": 0, "count": 1}, {"area": 1, "station": "荒井(宮城)", "station_kana": "あらい", "denco": "まやか", "lat": 38.244861, "lng": 140.948611, "radius": 0, "count": 1}, {"area": 2, "station": "鹿沼", "station_kana": "かぬま", "denco": "りんご", "lat": 36.571222, "lng": 139.762961, "radius": 0, "count": 1}, {"area": 2, "station": "五反田", "station_kana": "ごたんだ", "denco": "ニャッシュ ダッチュー", "lat": 35.625974, "lng": 139.723822, "radius": 0, "count": 2}, {"area": 2, "station": "東京貨物ターミナル", "station_kana": "とうきょうかもつたーみなる", "denco": "にころ", "lat": 35.5958411, "lng": 139.7577865, "radius": 300, "count": 1}, {"area": 2, "station": "王子", "station_kana": "おうじ", "denco": "しぐれ", "lat": 35.752389, "lng": 139.73819, "radius": 0, "count": 1}, {"area": 2, "station": "八潮", "station_kana": "やしお", "denco": "みらい", "lat": 35.807905, "lng": 139.845017, "radius": 0, "count": 1}, {"area": 2, "station": "新百合ヶ丘", "station_kana": "しんゆりがおか", "denco": "うらら ほこね", "lat": 35.603705, "lng": 139.507608, "radius": 0, "count": 2}, {"area": 2, "station": "京橋(東京)", "station_kana": "きょうばし", "denco": "リオナ", "lat": 35.676856, "lng": 139.770126, "radius": 0, "count": 1}, {"area": 2, "station": "作草部", "station_kana": "さくさべ", "denco": "チコ マコ", "lat": 35.625806, "lng": 140.115314, "radius": 0, "count": 2}, {"area": 2, "station": "阿佐ケ谷", "station_kana": "あさがや", "denco": "カノン", "lat": 35.704818, "lng": 139.635868, "radius": 0, "count": 1}, {"area": 2, "station": "敷島", "station_kana": "しきしま", "denco": "ヒメギ", "lat": 36.537636, "lng": 139.033897, "radius": 0, "count": 1}, {"area": 2, "station": "江見", "station_kana": "えみ", "denco": "なより", "lat": 35.062513, "lng": 140.061026, "radius": 0, "count": 1}, {"area": 2, "station": "上野", "station_kana": "うえの", "denco": "ちとせ", "lat": 35.71379, "lng": 139.777043, "radius": 0, "count": 1}, {"area": 2, "station": "青砥", "station_kana": "あおと", "denco": "そら", "lat": 35.745883, "lng": 139.856292, "radius": 0, "count": 1}, {"area": 2, "station": "羽貫", "station_kana": "はぬき", "denco": "ミユ", "lat": 36.007311, "lng": 139.608608, "radius": 0, "count": 1}, {"area": 2, "station": "大雄山", "station_kana": "だいゆうざん", "denco": "るり", "lat": 35.319046, "lng": 139.10365, "radius": 0, "count": 1}, {"area": 2, "station": "那珂湊", "station_kana": "なかみなと", "denco": "ねも", "lat": 36.345453, "lng": 140.587716, "radius": 0, "count": 1}, {"area": 2, "station": "汐入", "station_kana": "しおいり", "denco": "みそら", "lat": 35.280241, "lng": 139.662443, "radius": 0, "count": 1}, {"area": 2, "station": "品川", "station_kana": "しながわ", "denco": "めぐる", "lat": 35.62876, "lng": 139.738999, "radius": 0, "count": 1}, {"area": 2, "station": "金沢文庫", "station_kana": "かなざわぶんこ", "denco": "ギンカ", "lat": 35.342966, "lng": 139.621606, "radius": 0, "count": 1}, {"area": 2, "station": "荻窪", "station_kana": "おぎくぼ", "denco": "アヤ", "lat": 35.704523, "lng": 139.620109, "radius": 0, "count": 1}, {"area": 2, "station": "江ノ島", "station_kana": "えのしま", "denco": "ナツミ", "lat": 35.311003, "lng": 139.487581, "radius": 0, "count": 1}, {"area": 2, "station": "小涌谷", "station_kana": "こわきだに", "denco": "あすか", "lat": 35.240374, "lng": 139.053162, "radius": 0, "count": 1}, {"area": 2, "station": "新田野", "station_kana": "にったの", "denco": "なのか", "lat": 35.276408, "lng": 140.328081, "radius": 0, "count": 1}, {"area": 2, "station": "調布", "station_kana": "ちょうふ", "denco": "みずか", "lat": 35.652181, "lng": 139.543988, "radius": 0, "count": 1}, {"area": 2, "station": "新藤原", "station_kana": "しんふじわら", "denco": "ぼたん", "lat": 36.852505, "lng": 139.732963, "radius": 0, "count": 1}, {"area": 2, "station": "横浜", "station_kana": "よこはま", "denco": "みちる", "lat": 35.466195, "lng": 139.622704, "radius": 0, "count": 1}, {"area": 2, "station": "所沢", "station_kana": "ところざわ", "denco": "にこ", "lat": 35.786627, "lng": 139.473324, "radius": 0, "count": 1}, {"area": 2, "station": "勝田", "station_kana": "かつた", "denco": "ミキ", "lat": 36.394033, "lng": 140.524482, "radius": 0, "count": 1}, {"area": 2, "station": "東京", "station_kana": "とうきょう", "denco": "なな", "lat": 35.681391, "lng": 139.766103, "radius": 0, "count": 1}, {"area": 2, "station": "宇都宮", "station_kana": "うつのみや", "denco": "らいか", "lat": 36.559246, "lng": 139.898389, "radius": 0, "count": 1}, {"area": 3, "station": "金城ふ頭", "station_kana": "きんじょうふとう", "denco": "セリア", "lat": 35.048775, "lng": 136.849009, "radius": 0, "count": 1}, {"area": 3, "station": "為栗", "station_kana": "してぐり", "denco": "メロ", "lat": 35.311687, "lng": 137.848503, "radius": 0, "count": 1}, {"area": 3, "station": "粟生津", "station_kana": "あおうづ", "denco": "しいら", "lat": 37.653988, "lng": 138.873484, "radius": 0, "count": 1}, {"area": 3, "station": "神畑", "station_kana": "かばたけ", "denco": "いおり", "lat": 36.377841, "lng": 138.216965, "radius": 0, "count": 1}, {"area": 3, "station": "倶利伽羅", "station_kana": "くりから", "denco": "しおり", "lat": 36.672489, "lng": 136.791605, "radius": 0, "count": 1}, {"area": 3, "station": "美濃白鳥", "station_kana": "みのしろとり", "denco": "ハル", "lat": 35.884946, "lng": 136.860602, "radius": 0, "count": 1}, {"area": 3, "station": "豊栄", "station_kana": "とよさか", "denco": "なほ", "lat": 37.919351, "lng": 139.215347, "radius": 0, "count": 1}, {"area": 3, "station": "浦佐", "station_kana": "うらさ", "denco": "ノア", "lat": 37.167488, "lng": 138.922798, "radius": 0, "count": 1}, {"area": 3, "station": "本宿(愛知)", "station_kana": "もとじゅく", "denco": "ひまり", "lat": 34.893025, "lng": 137.260014, "radius": 0, "count": 1}, {"area": 3, "station": "蓮台寺", "station_kana": "れんだいじ", "denco": "ミオ ナギサ ミナト", "lat": 34.699634, "lng": 138.941274, "radius": 0, "count": 3}, {"area": 3, "station": "福井(福井)", "station_kana": "ふくい", "denco": "リト", "lat": 36.062057, "lng": 136.223516, "radius": 0, "count": 1}, {"area": 3, "station": "高岡", "station_kana": "たかおか", "denco": "やまと", "lat": 36.740948, "lng": 137.015274, "radius": 0, "count": 1}, {"area": 3, "station": "牧之郷", "station_kana": "まきのこう", "denco": "あい", "lat": 34.988677, "lng": 138.954317, "radius": 0, "count": 1}, {"area": 3, "station": "下新", "station_kana": "しもにい", "denco": "ゆき", "lat": 36.22513, "lng": 137.922564, "radius": 0, "count": 1}, {"area": 3, "station": "田原町(福井)", "station_kana": "たわらまち", "denco": "つばさ", "lat": 36.074888, "lng": 136.21738, "radius": 0, "count": 1}, {"area": 3, "station": "砂田橋", "station_kana": "すなだばし", "denco": "あきら", "lat": 35.188861, "lng": 136.953999, "radius": 0, "count": 1}, {"area": 3, "station": "北府", "station_kana": "きたご", "denco": "ゆめの", "lat": 35.910114, "lng": 136.166563, "radius": 0, "count": 1}, {"area": 3, "station": "勝山", "station_kana": "かつやま", "denco": "ていら", "lat": 36.056362, "lng": 136.492079, "radius": 0, "count": 1}, {"area": 3, "station": "糸魚川", "station_kana": "いといがわ", "denco": "せつか", "lat": 37.043631, "lng": 137.861311, "radius": 0, "count": 1}, {"area": 3, "station": "樽見", "station_kana": "たるみ", "denco": "あゆ", "lat": 35.635119, "lng": 136.615827, "radius": 0, "count": 1}, {"area": 3, "station": "七尾", "station_kana": "ななお", "denco": "こうめ", "lat": 37.041613, "lng": 136.964501, "radius": 0, "count": 1}, {"area": 3, "station": "小浜", "station_kana": "おばま", "denco": "まい", "lat": 35.491643, "lng": 135.745672, "radius": 0, "count": 1}, {"area": 3, "station": "青海川", "station_kana": "おうみがわ", "denco": "しゅか", "lat": 37.346143, "lng": 138.486169, "radius": 0, "count": 1}, {"area": 3, "station": "九頭竜湖", "station_kana": "くずりゅうこ", "denco": "きらら", "lat": 35.90449, "lng": 136.66146, "radius": 0, "count": 1}, {"area": 3, "station": "王子保", "station_kana": "おうしお", "denco": "こはな", "lat": 35.866259, "lng": 136.165595, "radius": 0, "count": 1}, {"area": 3, "station": "寿", "station_kana": "ことぶき", "denco": "むつみ", "lat": 35.508442, "lng": 138.82558, "radius": 0, "count": 1}, {"area": 3, "station": "大月", "station_kana": "おおつき", "denco": "シーナ", "lat": 35.613222, "lng": 138.942729, "radius": 0, "count": 1}, {"area": 4, "station": "新大阪", "station_kana": "しんおおさか", "denco": "ルナ", "lat": 34.734136, "lng": 135.501852, "radius": 0, "count": 1}, {"area": 4, "station": "天下茶屋", "station_kana": "てんがちゃや", "denco": "さや", "lat": 34.636847, "lng": 135.496673, "radius": 0, "count": 1}, {"area": 4, "station": "有栖川", "station_kana": "ありすがわ", "denco": "もぼ", "lat": 35.015249, "lng": 135.694216, "radius": 0, "count": 1}, {"area": 4, "station": "北巽", "station_kana": "きたたつみ", "denco": "レン", "lat": 34.652982, "lng": 135.554964, "radius": 0, "count": 1}, {"area": 4, "station": "南巽", "station_kana": "みなみたつみ", "denco": "レン", "lat": 34.643261, "lng": 135.553298, "radius": 0, "count": 1}, {"area": 4, "station": "賢島", "station_kana": "かしこじま", "denco": "エリア", "lat": 34.308529, "lng": 136.819285, "radius": 0, "count": 1}, {"area": 4, "station": "尺土", "station_kana": "しゃくど", "denco": "るる", "lat": 34.508577, "lng": 135.721404, "radius": 0, "count": 1}, {"area": 4, "station": "三条(京都)", "station_kana": "さんじょう", "denco": "なつめ", "lat": 35.009114, "lng": 135.772274, "radius": 0, "count": 1}, {"area": 4, "station": "白浜", "station_kana": "しらはま", "denco": "マリン", "lat": 33.676259, "lng": 135.3874, "radius": 0, "count": 1}, {"area": 4, "station": "橿原神宮前", "station_kana": "かしはらじんぐうまえ", "denco": "らら", "lat": 34.483987, "lng": 135.79434, "radius": 0, "count": 1}, {"area": 4, "station": "トロッコ嵯峨", "station_kana": "とろっこさが", "denco": "もみじ", "lat": 35.018656, "lng": 135.680704, "radius": 0, "count": 1}, {"area": 4, "station": "桂", "station_kana": "かつら", "denco": "みやび", "lat": 34.979522, "lng": 135.703302, "radius": 0, "count": 1}, {"area": 4, "station": "阿下喜", "station_kana": "あげき", "denco": "ニナ", "lat": 35.146177, "lng": 136.518796, "radius": 0, "count": 1}, {"area": 4, "station": "八日市", "station_kana": "ようかいち", "denco": "ゆかり", "lat": 35.114264, "lng": 136.194582, "radius": 0, "count": 1}, {"area": 4, "station": "信楽", "station_kana": "しがらき", "denco": "くろがね", "lat": 34.87713, "lng": 136.061317, "radius": 0, "count": 1}, {"area": 4, "station": "天王寺", "station_kana": "てんのうじ", "denco": "たまき", "lat": 34.647842, "lng": 135.513223, "radius": 0, "count": 1}, {"area": 4, "station": "駒ヶ林", "station_kana": "こまがばやし", "denco": "シキネ", "lat": 34.652108, "lng": 135.149554, "radius": 0, "count": 1}, {"area": 4, "station": "二見浦", "station_kana": "ふたみのうら", "denco": "みえ", "lat": 34.503753, "lng": 136.77713, "radius": 0, "count": 1}, {"area": 4, "station": "生駒", "station_kana": "いこま", "denco": "わかな", "lat": 34.693082, "lng": 135.698006, "radius": 0, "count": 1}, {"area": 4, "station": "千旦", "station_kana": "せんだ", "denco": "あずさ", "lat": 34.24167, "lng": 135.245677, "radius": 0, "count": 1}, {"area": 4, "station": "和田山", "station_kana": "わだやま", "denco": "ひょうこ", "lat": 35.34141, "lng": 134.85137, "radius": 0, "count": 1}, {"area": 4, "station": "苔縄", "station_kana": "こけなわ", "denco": "やちよ", "lat": 34.896828, "lng": 134.354083, "radius": 0, "count": 1}, {"area": 5, "station": "江波(広島)", "station_kana": "えば", "denco": "シャルロッテ", "lat": 34.372496, "lng": 132.436044, "radius": 0, "count": 1}, {"area": 5, "station": "美談", "station_kana": "みだみ", "denco": "みこと くに", "lat": 35.412572, "lng": 132.798006, "radius": 0, "count": 2}, {"area": 5, "station": "岩国", "station_kana": "いわくに", "denco": "みづほ", "lat": 34.171828, "lng": 132.225631, "radius": 0, "count": 1}, {"area": 5, "station": "妹尾", "station_kana": "せのお", "denco": "まりか", "lat": 34.608269, "lng": 133.871246, "radius": 0, "count": 1}, {"area": 5, "station": "根雨", "station_kana": "ねう", "denco": "つむぎ", "lat": 35.241483, "lng": 133.442036, "radius": 0, "count": 1}, {"area": 5, "station": "観音町(広島)", "station_kana": "かんおんまち", "denco": "ひめ", "lat": 34.395534, "lng": 132.438405, "radius": 0, "count": 1}, {"area": 5, "station": "出雲市", "station_kana": "いずもし", "denco": "すばる", "lat": 35.360694, "lng": 132.756518, "radius": 0, "count": 1}, {"area": 5, "station": "安来", "station_kana": "やすぎ", "denco": "あまね", "lat": 35.427995, "lng": 133.259279, "radius": 0, "count": 1}, {"area": 5, "station": "恋山形", "station_kana": "こいやまがた", "denco": "ちづ", "lat": 35.255641, "lng": 134.279083, "radius": 0, "count": 1}, {"area": 5, "station": "竹原", "station_kana": "たけはら", "denco": "せとら", "lat": 34.33945, "lng": 132.909705, "radius": 0, "count": 1}, {"area": 5, "station": "山口(山口)", "station_kana": "やまぐち", "denco": "ゆづる", "lat": 34.172737, "lng": 131.480985, "radius": 0, "count": 1}, {"area": 6, "station": "新居浜", "station_kana": "にいはま", "denco": "いずな ありす", "lat": 33.948124, "lng": 133.294761, "radius": 0, "count": 2}, {"area": 6, "station": "坂出", "station_kana": "さかいで", "denco": "アサ", "lat": 34.313189, "lng": 133.856819, "radius": 0, "count": 1}, {"area": 6, "station": "窪川", "station_kana": "くぼかわ", "denco": "まぜ", "lat": 33.212656, "lng": 133.137285, "radius": 0, "count": 1}, {"area": 6, "station": "海部", "station_kana": "かいふ", "denco": "なる", "lat": 33.593453, "lng": 134.351999, "radius": 0, "count": 1}, {"area": 6, "station": "下灘", "station_kana": "しもなだ", "denco": "いよ", "lat": 33.655109, "lng": 132.589219, "radius": 0, "count": 1}, {"area": 6, "station": "徳島", "station_kana": "とくしま", "denco": "ると", "lat": 34.074572, "lng": 134.551391, "radius": 0, "count": 1}, {"area": 7, "station": "花畑", "station_kana": "はなばたけ", "denco": "もえ", "lat": 33.306643, "lng": 130.515972, "radius": 0, "count": 1}, {"area": 7, "station": "首里", "station_kana": "しゅり", "denco": "いちほ", "lat": 26.219191, "lng": 127.725492, "radius": 0, "count": 1}, {"area": 7, "station": "ハウステンボス", "station_kana": "はうすてんぼす", "denco": "ベアトリス", "lat": 33.091923, "lng": 129.796458, "radius": 0, "count": 1}, {"area": 7, "station": "南郷", "station_kana": "なんごう", "denco": "にちな", "lat": 31.535927, "lng": 131.372157, "radius": 0, "count": 1}, {"area": 7, "station": "黒崎", "station_kana": "くろさき", "denco": "あたる", "lat": 33.866807, "lng": 130.766206, "radius": 0, "count": 1}, {"area": 7, "station": "湯前", "station_kana": "ゆのまえ", "denco": "ひびき", "lat": 32.281389, "lng": 130.980094, "radius": 0, "count": 1}, {"area": 7, "station": "蛍茶屋", "station_kana": "ほたるぢゃや", "denco": "みなも", "lat": 32.751135, "lng": 129.894254, "radius": 0, "count": 1}, {"area": 7, "station": "博多", "station_kana": "はかた", "denco": "みつる", "lat": 33.590002, "lng": 130.420622, "radius": 0, "count": 1}, {"area": 7, "station": "中津(大分)", "station_kana": "なかつ", "denco": "コヨイ", "lat": 33.599202, "lng": 131.190769, "radius": 0, "count": 1}, {"area": 7, "station": "唐津", "station_kana": "からつ", "denco": "シズ", "lat": 33.446038, "lng": 129.96835, "radius": 0, "count": 1}, {"area": 7, "station": "郡元(鹿児島市交通局)", "station_kana": "こおりもと", "denco": "ゆう", "lat": 31.562466, "lng": 130.549024, "radius": 0, "count": 1}, {"area": 7, "station": "美々津", "station_kana": "みみつ", "denco": "あさひ", "lat": 32.325892, "lng": 131.602279, "radius": 0, "count": 1}, {"area": 7, "station": "指宿", "station_kana": "いぶすき", "denco": "おとめ", "lat": 31.236925, "lng": 130.642637, "radius": 0, "count": 1}, {"area": 7, "station": "阿蘇白川", "station_kana": "あそしらかわ", "denco": "あそ", "lat": 32.822368, "lng": 131.084345, "radius": 0, "count": 1}, {"area": 7, "station": "諫早", "station_kana": "いさはや", "denco": "ちどり", "lat": 32.851018, "lng": 130.041596, "radius": 0, "count": 1}, {"area": 7, "station": "小倉(福岡)", "station_kana": "こくら", "denco": "おとは", "lat": 33.886756, "lng": 130.882678, "radius": 0, "count": 1}];
+        var prefix = '20240626_';
+        var redMarkerCount = 0;
+        var totalMarkerCount = markerData.reduce((total, marker) => total + marker.count, 0)-1;
+        // レンが北巽、南巽で重複カウントされるのでtotalMarkerCountを-1する
+        var renKeys = markerData
+            .filter(marker => marker.station === "北巽" || marker.station === "南巽")
+            .map(marker => `${prefix}${marker.lat}_${marker.lng}`);
+        var renMarkers = [];
+        updateMarkerCount();
+
+        var circles = [];
+        var zoomThreshold = 14;
+        markerData.forEach(function(data) {
+            var key = prefix + data.lat + "_" + data.lng;
+            var nameHtml = `<div style="font-size: 16px;">${data.station}</div><div>${data.station_kana}</div><div style="font-size: 18px; color: #009;"><b>${data.denco}</b></div>`;
+            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
+            var loc = [data.lat, data.lng];
+            var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
+                .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
+            if(renKeys.includes(key)){
+                renMarkers.push(marker);
+            }
+
+            // 半径を指定した円を描画
+            if(data.radius > 0){
+                var circle = L.circle(loc, {
+                    color: 'green',
+                    fillColor: '#3f0',
+                    fillOpacity: 0.15,
+                    radius: data.radius
+                });
+                circles.push(circle);
+            }
+            
+            // ダブルタップイベント
+            marker.on('dblclick', function() {
+                toggleMarkerColor(key, marker);
+            });
+
+            marker.on('touchend', function(e) {
+                if (e.originalEvent.detail === 2) { // ダブルタップ判定
+                    toggleMarkerColor(key, marker);
+                }
+            });
+
+        });
+
+        function updateCircleVisibility() {
+            circles.forEach(function(circle) {
+                if (map.getZoom() > zoomThreshold) {
+                    if (!map.hasLayer(circle)) {
+                        circle.addTo(map);
+                    }
+                } else {
+                    if (map.hasLayer(circle)) {
+                        map.removeLayer(circle);
+                    }
+                }
+            });
+        }
+
+        map.on('zoomend', updateCircleVisibility);
+        map.on('moveend', updateCircleVisibility);
+
+        function toggleMarkerColor(key, marker) {
+            // レンの場合の対応
+            if(renKeys.includes(key)){
+                if (localStorage.getItem(key) === 'red') {
+                    renKeys.forEach(function(key){
+                        localStorage.removeItem(key);
+                    });
+                    renMarkers.forEach(function(marker){
+                        marker.setIcon(createMarkerIcon('blue'));
+                    });
+                } else {
+                    renKeys.forEach(function(key){
+                        localStorage.setItem(key, 'red');
+                    });
+                    renMarkers.forEach(function(marker){
+                        marker.setIcon(createMarkerIcon('red'));
+                    });
+                }
+            }else{
+                if (localStorage.getItem(key) === 'red') {
+                    marker.setIcon(createMarkerIcon('blue'));
+                    localStorage.removeItem(key);
+                } else {
+                    marker.setIcon(createMarkerIcon('red'));
+                    localStorage.setItem(key, 'red');
+                }
+            }
+            updateMarkerCount();
+        }
+
+        function createMarkerIcon(color) {
+            return new L.Icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        function updateMarkerCount() {
+            // 既存のredマーカーのカウント
+            redMarkerCount = 0;
+            isRen = false;
+            markerData.forEach(function(data) {
+                var key = prefix + data.lat + "_" + data.lng;
+                var storedColor = localStorage.getItem(key);
+                if (storedColor === 'red') {
+                    redMarkerCount += data.count;
+                    if(renKeys.includes(key)){
+                        isRen = true;
+                    }
+                }
+            });
+            // レンの場合は重複カウントしてしまうので-1する
+            if(isRen){
+                redMarkerCount--;
+                console.log(redMarkerCount);
+            }
+            document.getElementById('red-markers-count').textContent = redMarkerCount;
+            document.getElementById('total-markers-count').textContent = totalMarkerCount;
+        }
+
+        // 現在地を取得
+        document.getElementById('getLocation').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    map.setView([lat, lon], 13); // Zoom to current location
+                }, function() {
+                    alert('位置情報を取得できませんでした。');
+                });
+            } else {
+                alert('このブラウザでは位置情報がサポートされていません。');
+            }
+        });
+
+        // ボタンのエフェクト
+        document.getElementById('getLocation').addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(51, 103, 214, 0.8)'; // Slightly darker semi-transparent blue on hover
+            this.style.boxShadow = '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)';
+        });
+        document.getElementById('getLocation').addEventListener('mouseleave', function() {
+            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
+            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+        });
+        document.getElementById('getLocation').addEventListener('touchend', function() {
+            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
+            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+        });
+
+    });
+    </script>
+</body>
+</html>

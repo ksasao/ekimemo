@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script>
+        L_NO_TOUCH = false;
+        L_DISABLE_3D = false;
+    </script>
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>駅メモ！対象駅 2024/06/26-2025/5/23 - でんこと全国各地の駅におでかけしようキャンペーン～10周年ver.～</title>
+    <style>
+        #map_b68e2f63d5196a6d0a8179cd86a9ef5c {
+            position: relative;
+            width: 100.0%;
+            height: 100.0%;
+            left: 0.0%;
+            top: 0.0%;
+        }
+        .leaflet-container { font-size: 1rem; }
+        .leaflet-marker-icon {
+            touch-action: none;
+        }
+        .leaflet-marker-icon:active {
+            outline: none;
+            -webkit-tap-highlight-color: rgba(0,0,0,0);
+        }
+        /* 表示部分の袋文字スタイル */
+        #marker-count {
+            position: fixed;
+            bottom: 3px;
+            left: 10px;
+            padding: 5px;
+            font-size: 24px;
+            font-weight: bold; 
+            color: white;
+            text-shadow:  1px 1px 4px rgba(0, 0, 0, 0.9);
+            z-index: 1001; }
+    </style>
+</head>
+<body>
+    <div style="
+        position: fixed;
+        bottom: 0px;
+        left: 0px;
+        background-color: white;
+        padding: 0px;
+        border: 0px solid white;
+        font-size: 10px;
+        z-index: 1000;
+    ">
+        駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank">駅データ</a> を利用しています
+    </div>
+    <div id="marker-count">
+        <span id="red-markers-count" style="font-size: 48px;">0</span>/<span id="total-markers-count">0</span>
+    </div>
+    <div class="folium-map" id="map_b68e2f63d5196a6d0a8179cd86a9ef5c"></div>
+
+    <button id="getLocation" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: rgba(66, 133, 244, 0.7);
+        border: none;
+        outline: none;
+        cursor: pointer;
+        z-index: 1001;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+    ">
+        <i class="fas fa-crosshairs" style="color: white; font-size: 24px;"></i>
+    </button>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c', {
+            zoomSnap: 0.1, // 0.1単位でズームレベルが変わる 
+            zoomDelta: 0.1, // マウスホイールで0.1単位でズーム
+            wheelPxPerZoomLevel: 120 // スムーズなズーム
+        }).setView([35.682839, 139.759455], 4.5);
+        
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        var markerData = [{"area": 0, "station": "美深", "station_kana": "びふか", "denco": "ふぶ", "lat": 44.482951, "lng": 142.350597, "radius": 0, "count": 1}, {"area": 2, "station": "五反田", "station_kana": "ごたんだ", "denco": "ニャッシュ ダッチュー", "lat": 35.625974, "lng": 139.723822, "radius": 0, "count": 2}, {"area": 2, "station": "東京貨物ターミナル", "station_kana": "とうきょうかもつたーみなる", "denco": "にころ", "lat": 35.5958411, "lng": 139.7577865, "radius": 300, "count": 1}, {"area": 4, "station": "北巽", "station_kana": "きたたつみ", "denco": "レン", "lat": 34.652982, "lng": 135.554964, "radius": 0, "count": 1}, {"area": 4, "station": "南巽", "station_kana": "みなみたつみ", "denco": "レン", "lat": 34.643261, "lng": 135.553298, "radius": 0, "count": 1}]; // REPLACE_MARKER_DATA
+        var prefix = '20240626_';
+        var redMarkerCount = 0;
+        var totalMarkerCount = markerData.reduce((total, marker) => total + marker.count, 0)-1;
+        // レンが北巽、南巽で重複カウントされるのでtotalMarkerCountを-1する
+        var renKeys = markerData
+            .filter(marker => marker.station === "北巽" || marker.station === "南巽")
+            .map(marker => `${prefix}${marker.lat}_${marker.lng}`);
+        var renMarkers = [];
+        updateMarkerCount();
+
+        var circles = [];
+        var zoomThreshold = 14;
+        markerData.forEach(function(data) {
+            var key = prefix + data.lat + "_" + data.lng;
+            var nameHtml = `<div style="font-size: 16px;">${data.station}</div><div>${data.station_kana}</div><div style="font-size: 18px; color: #009;"><b>${data.denco}</b></div>`;
+            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
+            var loc = [data.lat, data.lng];
+            var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
+                .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
+            if(renKeys.includes(key)){
+                renMarkers.push(marker);
+            }
+
+            // 半径を指定した円を描画
+            if(data.radius > 0){
+                var circle = L.circle(loc, {
+                    color: 'green',
+                    fillColor: '#3f0',
+                    fillOpacity: 0.15,
+                    radius: data.radius
+                });
+                circles.push(circle);
+            }
+            
+            // ダブルタップイベント
+            marker.on('dblclick', function() {
+                toggleMarkerColor(key, marker);
+            });
+
+            marker.on('touchend', function(e) {
+                if (e.originalEvent.detail === 2) { // ダブルタップ判定
+                    toggleMarkerColor(key, marker);
+                }
+            });
+
+        });
+
+        function updateCircleVisibility() {
+            circles.forEach(function(circle) {
+                if (map.getZoom() > zoomThreshold) {
+                    if (!map.hasLayer(circle)) {
+                        circle.addTo(map);
+                    }
+                } else {
+                    if (map.hasLayer(circle)) {
+                        map.removeLayer(circle);
+                    }
+                }
+            });
+        }
+
+        map.on('zoomend', updateCircleVisibility);
+        map.on('moveend', updateCircleVisibility);
+
+        function toggleMarkerColor(key, marker) {
+            // レンの場合の対応
+            if(renKeys.includes(key)){
+                if (localStorage.getItem(key) === 'red') {
+                    renKeys.forEach(function(key){
+                        localStorage.removeItem(key);
+                    });
+                    renMarkers.forEach(function(marker){
+                        marker.setIcon(createMarkerIcon('blue'));
+                    });
+                } else {
+                    renKeys.forEach(function(key){
+                        localStorage.setItem(key, 'red');
+                    });
+                    renMarkers.forEach(function(marker){
+                        marker.setIcon(createMarkerIcon('red'));
+                    });
+                }
+            }else{
+                if (localStorage.getItem(key) === 'red') {
+                    marker.setIcon(createMarkerIcon('blue'));
+                    localStorage.removeItem(key);
+                } else {
+                    marker.setIcon(createMarkerIcon('red'));
+                    localStorage.setItem(key, 'red');
+                }
+            }
+            updateMarkerCount();
+        }
+
+        function createMarkerIcon(color) {
+            return new L.Icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+
+        function updateMarkerCount() {
+            // 既存のredマーカーのカウント
+            redMarkerCount = 0;
+            isRen = false;
+            markerData.forEach(function(data) {
+                var key = prefix + data.lat + "_" + data.lng;
+                var storedColor = localStorage.getItem(key);
+                if (storedColor === 'red') {
+                    redMarkerCount += data.count;
+                    if(renKeys.includes(key)){
+                        isRen = true;
+                    }
+                }
+            });
+            // レンの場合は重複カウントしてしまうので-1する
+            if(isRen){
+                redMarkerCount--;
+                console.log(redMarkerCount);
+            }
+            document.getElementById('red-markers-count').textContent = redMarkerCount;
+            document.getElementById('total-markers-count').textContent = totalMarkerCount;
+        }
+
+        // 現在地を取得
+        document.getElementById('getLocation').addEventListener('click', function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var lat = position.coords.latitude;
+                    var lon = position.coords.longitude;
+                    map.setView([lat, lon], 13); // Zoom to current location
+                }, function() {
+                    alert('位置情報を取得できませんでした。');
+                });
+            } else {
+                alert('このブラウザでは位置情報がサポートされていません。');
+            }
+        });
+
+        // ボタンのエフェクト
+        document.getElementById('getLocation').addEventListener('mouseenter', function() {
+            this.style.backgroundColor = 'rgba(51, 103, 214, 0.8)'; // Slightly darker semi-transparent blue on hover
+            this.style.boxShadow = '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)';
+        });
+        document.getElementById('getLocation').addEventListener('mouseleave', function() {
+            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
+            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+        });
+        document.getElementById('getLocation').addEventListener('touchend', function() {
+            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
+            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+        });
+
+    });
+    </script>
+</body>
+</html>
