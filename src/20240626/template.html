@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>駅メモ！対象駅 2024/06/26-2025/5/23 - でんこと全国各地の駅におでかけしようキャンペーン～10周年ver.～</title>
+    <title>駅メモ！対象駅 2024/06/26-2025/05/23 - でんこと全国各地の駅におでかけしようキャンペーン～10周年ver.～</title>
     <style>
         #map_b68e2f63d5196a6d0a8179cd86a9ef5c {
             position: relative;
@@ -114,6 +114,15 @@
             var loc = [data.lat, data.lng];
             var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
                 .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
+            // 吹き出し部分のタップで色反転
+            marker.on('popupopen', function(e) {
+                var popupElement = e.popup._container;
+                popupElement.addEventListener('click', function(event) {
+                    if (!event.target.classList.contains('leaflet-popup-close-button')){
+                        toggleMarkerColor(key, marker);
+                    }
+                });
+            });
             if(renKeys.includes(key)){
                 renMarkers.push(marker);
             }
