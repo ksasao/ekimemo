@@ -101,10 +101,11 @@
         updateMarkerCount();
 
         var circles = [];
-        var zoomThreshold = 14;
+        var zoomThreshold = 15;
         markerData.forEach(function(data) {
             var key = prefix + data.lat + "_" + data.lng;
-            var nameHtml = `<div style="font-size: 16px;">${data.name}</div><div>${data.name_kana}</div><div style="font-size: 18px; color: #009;"><b>${data.pt} pt</b></div>`;
+            var searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
+            var nameHtml = `<div style="font-size: 16px;"><a href="https://x.com/search?q=${encodeURIComponent(searchKeyword)}&src=typed_query" target="_blank">${data.name}</a></div><div>${data.name_kana}</div><div style="font-size: 18px; color: #009;"><b>${data.pt} pt</b></div>`;
             var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
             var loc = [data.lat, data.lng];
             var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
@@ -145,7 +146,7 @@
 
         function updateCircleVisibility() {
             circles.forEach(function(circle) {
-                if (map.getZoom() > zoomThreshold) {
+                if (map.getZoom() >= zoomThreshold) {
                     if (!map.hasLayer(circle)) {
                         circle.addTo(map);
                     }
@@ -202,7 +203,7 @@
                 navigator.geolocation.getCurrentPosition(function(position) {
                     var lat = position.coords.latitude;
                     var lon = position.coords.longitude;
-                    map.setView([lat, lon], 13); // Zoom to current location
+                    map.setView([lat, lon], zoomThreshold); // Zoom to current location
                 }, function() {
                     alert('位置情報を取得できませんでした。');
                 });
