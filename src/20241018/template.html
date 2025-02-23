@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>駅メモ！対象駅 2024/10/18-2025/02/28 - やまと・しおり・こはなと巡る！北陸の美</title>
+    <title>駅メモ！マップ 2024/10/18-2025/02/28 - やまと・しおり・こはなと巡る！北陸の美</title>
     <style>
         #map_b68e2f63d5196a6d0a8179cd86a9ef5c {
             position: relative;
@@ -32,6 +32,14 @@
         .leaflet-marker-icon:active {
             outline: none;
             -webkit-tap-highlight-color: rgba(0,0,0,0);
+        }
+        .blinking {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
         }
         /* 表示部分の袋文字スタイル */
         #marker-count {
@@ -102,15 +110,18 @@
 
         var circles = [];
         var zoomThreshold = 15;
+        var located = false;
         markerData.forEach(function(data) {
+            // マーカーを追加
             var key = prefix + data.lat + "_" + data.lng;
             var searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
             var nameHtml = `<div style="font-size: 16px;"><a href="https://x.com/search?q=${encodeURIComponent(searchKeyword)}&src=typed_query" target="_blank">${data.name}</a></div><div>${data.name_kana}</div><div style="font-size: 18px; color: #009;"><b>${data.pt} pt</b></div>`;
-            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
             var loc = [data.lat, data.lng];
+            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
             var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
                 .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
-            // 吹き出し部分のタップで色反転
+
+            // 吹き出し部分のタップで色反転(iOS対応)
             marker.on('popupopen', function(e) {
                 var popupElement = e.popup._container;
                 popupElement.addEventListener('click', function(event) {
@@ -135,7 +146,6 @@
             marker.on('dblclick', function() {
                 toggleMarkerColor(key, marker);
             });
-
             marker.on('touchend', function(e) {
                 if (e.originalEvent.detail === 2) { // ダブルタップ判定
                     toggleMarkerColor(key, marker);
@@ -198,19 +208,51 @@
         }
 
         // 現在地を取得
+        var locationMarker = null, radiusCircle = null;
+
+        // 現在位置を取得しマーカーを追加
+        function onLocationFound(e) {
+            var radius = e.accuracy / 2;
+
+            // カスタムアイコンを作成
+            var pulsingIcon = L.divIcon({
+                className: 'blinking',
+                html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
+                iconSize: [20, 20]
+            });
+
+            locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
+            radiusCircle = L.circle(e.latlng, radius);
+
+            map.addLayer(locationMarker);
+            map.addLayer(radiusCircle);
+            map.flyTo(e.latlng, 16);
+        }
+
+        function onLocationError(e) {
+            alert('位置情報を取得できませんでした。');
+        }
+
+        map.on('locationfound', onLocationFound);
+        map.on('locationerror', onLocationError);
+
+        // ボタンクリックイベントを設定
         document.getElementById('getLocation').addEventListener('click', function() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    var lat = position.coords.latitude;
-                    var lon = position.coords.longitude;
-                    map.setView([lat, lon], zoomThreshold); // Zoom to current location
-                }, function() {
-                    alert('位置情報を取得できませんでした。');
-                });
-            } else {
-                alert('このブラウザでは位置情報がサポートされていません。');
+            if(!located) {
+                map.locate({ setView: true, watch: true, maxZoom: 16 });
+                located = true;
+            }
+            if (locationMarker && radiusCircle) { 
+                if (map.hasLayer(locationMarker)) {
+                    map.removeLayer(locationMarker);
+                    map.removeLayer(radiusCircle);
+                } else {
+                    map.addLayer(locationMarker);
+                    map.addLayer(radiusCircle);
+                }
             }
         });
+
 
         // ボタンのエフェクト
         document.getElementById('getLocation').addEventListener('mouseenter', function() {

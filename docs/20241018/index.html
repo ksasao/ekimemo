@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>駅メモ！対象駅 2024/10/18-2025/02/28 - やまと・しおり・こはなと巡る！北陸の美</title>
+    <title>駅メモ！マップ 2024/10/18-2025/02/28 - やまと・しおり・こはなと巡る！北陸の美</title>
     <style>
         #map_b68e2f63d5196a6d0a8179cd86a9ef5c {
             position: relative;
@@ -32,6 +32,14 @@
         .leaflet-marker-icon:active {
             outline: none;
             -webkit-tap-highlight-color: rgba(0,0,0,0);
+        }
+        .blinking {
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
         }
         /* 表示部分の袋文字スタイル */
         #marker-count {
@@ -94,7 +102,7 @@
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
-        var markerData = [{"name": "石動", "name_kana": "いするぎ", "lat": 36.672492, "lng": 136.865859, "radius": 0, "pt": 3}, {"name": "津幡", "name_kana": "つばた", "lat": 36.657895, "lng": 136.730759, "radius": 0, "pt": 2}, {"name": "金沢", "name_kana": "かなざわ", "lat": 36.578117, "lng": 136.648166, "radius": 0, "pt": 1}, {"name": "滑川", "name_kana": "なめりかわ", "lat": 36.769318, "lng": 137.348666, "radius": 0, "pt": 2}, {"name": "魚津", "name_kana": "うおづ", "lat": 36.82642, "lng": 137.405693, "radius": 0, "pt": 3}, {"name": "泊(富山)", "name_kana": "とまり", "lat": 36.951897, "lng": 137.556179, "radius": 0, "pt": 6}, {"name": "入善", "name_kana": "にゅうぜん", "lat": 36.941296, "lng": 137.499, "radius": 0, "pt": 5}, {"name": "生地", "name_kana": "いくじ", "lat": 36.906031, "lng": 137.426534, "radius": 0, "pt": 4}, {"name": "富山", "name_kana": "とやま", "lat": 36.701612, "lng": 137.213252, "radius": 0, "pt": 1}, {"name": "小杉(あいの風とやま鉄道線)", "name_kana": "こすぎ", "lat": 36.720947, "lng": 137.092767, "radius": 0, "pt": 2}, {"name": "高岡", "name_kana": "たかおか", "lat": 36.740948, "lng": 137.015274, "radius": 0, "pt": 3}, {"name": "野々市(IRいしかわ鉄道)", "name_kana": "ののいち", "lat": 36.541644, "lng": 136.598044, "radius": 0, "pt": 2}, {"name": "加賀笠間", "name_kana": "かがかさま", "lat": 36.502935, "lng": 136.527434, "radius": 0, "pt": 2}, {"name": "能美根上", "name_kana": "のみねあがり", "lat": 36.452053, "lng": 136.459721, "radius": 0, "pt": 2}, {"name": "小松", "name_kana": "こまつ", "lat": 36.402545, "lng": 136.452926, "radius": 0, "pt": 3}, {"name": "加賀温泉", "name_kana": "かがおんせん", "lat": 36.320562, "lng": 136.350337, "radius": 0, "pt": 3}, {"name": "大聖寺", "name_kana": "だいしょうじ", "lat": 36.300311, "lng": 136.314205, "radius": 0, "pt": 3}, {"name": "芦原温泉", "name_kana": "あわらおんせん", "lat": 36.214542, "lng": 136.235069, "radius": 0, "pt": 3}, {"name": "丸岡", "name_kana": "まるおか", "lat": 36.162595, "lng": 136.233502, "radius": 0, "pt": 3}, {"name": "福井(福井)", "name_kana": "ふくい", "lat": 36.062057, "lng": 136.223516, "radius": 0, "pt": 2}, {"name": "鯖江", "name_kana": "さばえ", "lat": 35.943355, "lng": 136.188852, "radius": 0, "pt": 3}, {"name": "武生", "name_kana": "たけふ", "lat": 35.903254, "lng": 136.170913, "radius": 0, "pt": 3}, {"name": "王子保", "name_kana": "おうしお", "lat": 35.866259, "lng": 136.165595, "radius": 0, "pt": 2}, {"name": "今庄", "name_kana": "いまじょう", "lat": 35.772947, "lng": 136.199279, "radius": 0, "pt": 3}, {"name": "敦賀", "name_kana": "つるが", "lat": 35.644767, "lng": 136.076488, "radius": 0, "pt": 2}, {"name": "とやま朝日町北陸街道 五叉路Cross Five", "name_kana": "", "lat": 36.9569695, "lng": 137.5595175, "radius": 250, "pt": 4}, {"name": "杉沢の沢スギ", "name_kana": "", "lat": 36.9427481, "lng": 137.4720898, "radius": 250, "pt": 9}, {"name": "黒部市吉田科学館", "name_kana": "", "lat": 36.901297, "lng": 137.4256462, "radius": 250, "pt": 10}, {"name": "魚津埋没林博物館", "name_kana": "", "lat": 36.8224611, "lng": 137.3950101, "radius": 250, "pt": 9}, {"name": "ほたるいかミュージアム", "name_kana": "", "lat": 36.7740842, "lng": 137.3444938, "radius": 250, "pt": 6}, {"name": "富岩運河環水公園", "name_kana": "", "lat": 36.7093769, "lng": 137.2124329, "radius": 250, "pt": 6}, {"name": "内川（川の駅 新湊）", "name_kana": "", "lat": 36.7810011, "lng": 137.0876742, "radius": 250, "pt": 12}, {"name": "高岡市藤子・F・不二雄ふるさとギャラリー", "name_kana": "", "lat": 36.7512183, "lng": 137.026517, "radius": 250, "pt": 9}, {"name": "クロスランドおやべ", "name_kana": "", "lat": 36.6573139, "lng": 136.8782951, "radius": 250, "pt": 9}, {"name": "津幡ふるさと歴史館れきしる", "name_kana": "", "lat": 36.673859, "lng": 136.734647, "radius": 250, "pt": 7}, {"name": "兼六園", "name_kana": "", "lat": 36.5621278, "lng": 136.6626515, "radius": 250, "pt": 6}, {"name": "野々市市ふるさと歴史館", "name_kana": "", "lat": 36.5459059, "lng": 136.5997536, "radius": 250, "pt": 4}, {"name": "道の駅めぐみ白山", "name_kana": "", "lat": 36.5006684, "lng": 136.5470779, "radius": 250, "pt": 9}, {"name": "能美ふるさとミュージアム", "name_kana": "", "lat": 36.4429064, "lng": 136.5059836, "radius": 250, "pt": 9}, {"name": "サイエンスヒルズこまつ", "name_kana": "", "lat": 36.401922, "lng": 136.4556815, "radius": 250, "pt": 6}, {"name": "石川県九谷焼美術館", "name_kana": "", "lat": 36.302787, "lng": 136.310215, "radius": 250, "pt": 6}, {"name": "金津創作の森美術館", "name_kana": "", "lat": 36.2305022, "lng": 136.2614073, "radius": 250, "pt": 6}, {"name": "丸岡城", "name_kana": "", "lat": 36.1523454, "lng": 136.2721028, "radius": 250, "pt": 12}, {"name": "養浩館庭園", "name_kana": "", "lat": 36.0686037, "lng": 136.2242666, "radius": 250, "pt": 8}, {"name": "めがねミュージアム", "name_kana": "", "lat": 35.9426606, "lng": 136.1988316, "radius": 250, "pt": 6}, {"name": "「ちひろの生まれた家」記念館", "name_kana": "", "lat": 35.899832, "lng": 136.1668294, "radius": 250, "pt": 4}, {"name": "今庄宿(公徳園(福井藩本陣跡))", "name_kana": "", "lat": 35.7728168, "lng": 136.1967177, "radius": 250, "pt": 4}, {"name": "敦賀赤レンガ倉庫", "name_kana": "", "lat": 35.6620052, "lng": 136.0746772, "radius": 250, "pt": 12}];
+        var markerData = [{"name": "石動", "name_kana": "いするぎ", "lat": 36.672492, "lng": 136.865859, "radius": 0, "pt": 3}, {"name": "津幡", "name_kana": "つばた", "lat": 36.657895, "lng": 136.730759, "radius": 0, "pt": 2}, {"name": "金沢", "name_kana": "かなざわ", "lat": 36.578117, "lng": 136.648166, "radius": 0, "pt": 1}, {"name": "滑川", "name_kana": "なめりかわ", "lat": 36.769318, "lng": 137.348666, "radius": 0, "pt": 2}, {"name": "魚津", "name_kana": "うおづ", "lat": 36.82642, "lng": 137.405693, "radius": 0, "pt": 3}, {"name": "泊(富山)", "name_kana": "とまり", "lat": 36.951897, "lng": 137.556179, "radius": 0, "pt": 6}, {"name": "入善", "name_kana": "にゅうぜん", "lat": 36.941296, "lng": 137.499, "radius": 0, "pt": 5}, {"name": "生地", "name_kana": "いくじ", "lat": 36.906031, "lng": 137.426534, "radius": 0, "pt": 4}, {"name": "富山", "name_kana": "とやま", "lat": 36.701612, "lng": 137.213252, "radius": 0, "pt": 1}, {"name": "小杉(あいの風とやま鉄道線)", "name_kana": "こすぎ", "lat": 36.720947, "lng": 137.092767, "radius": 0, "pt": 2}, {"name": "高岡", "name_kana": "たかおか", "lat": 36.740948, "lng": 137.015274, "radius": 0, "pt": 3}, {"name": "野々市(IRいしかわ鉄道)", "name_kana": "ののいち", "lat": 36.541644, "lng": 136.598044, "radius": 0, "pt": 2}, {"name": "加賀笠間", "name_kana": "かがかさま", "lat": 36.502935, "lng": 136.527434, "radius": 0, "pt": 2}, {"name": "能美根上", "name_kana": "のみねあがり", "lat": 36.452053, "lng": 136.459721, "radius": 0, "pt": 2}, {"name": "小松", "name_kana": "こまつ", "lat": 36.402545, "lng": 136.452926, "radius": 0, "pt": 3}, {"name": "加賀温泉", "name_kana": "かがおんせん", "lat": 36.320562, "lng": 136.350337, "radius": 0, "pt": 3}, {"name": "大聖寺", "name_kana": "だいしょうじ", "lat": 36.300311, "lng": 136.314205, "radius": 0, "pt": 3}, {"name": "芦原温泉", "name_kana": "あわらおんせん", "lat": 36.214542, "lng": 136.235069, "radius": 0, "pt": 3}, {"name": "丸岡", "name_kana": "まるおか", "lat": 36.162595, "lng": 136.233502, "radius": 0, "pt": 3}, {"name": "福井(福井)", "name_kana": "ふくい", "lat": 36.062057, "lng": 136.223516, "radius": 0, "pt": 2}, {"name": "鯖江", "name_kana": "さばえ", "lat": 35.943355, "lng": 136.188852, "radius": 0, "pt": 3}, {"name": "武生", "name_kana": "たけふ", "lat": 35.903254, "lng": 136.170913, "radius": 0, "pt": 3}, {"name": "王子保", "name_kana": "おうしお", "lat": 35.866259, "lng": 136.165595, "radius": 0, "pt": 2}, {"name": "今庄", "name_kana": "いまじょう", "lat": 35.772947, "lng": 136.199279, "radius": 0, "pt": 3}, {"name": "敦賀", "name_kana": "つるが", "lat": 35.644767, "lng": 136.076488, "radius": 0, "pt": 2}, {"name": "とやま朝日町北陸街道 五叉路Cross Five", "name_kana": "", "lat": 36.9569695, "lng": 137.5595175, "radius": 200, "pt": 4}, {"name": "杉沢の沢スギ", "name_kana": "", "lat": 36.9427481, "lng": 137.4720898, "radius": 200, "pt": 9}, {"name": "黒部市吉田科学館", "name_kana": "", "lat": 36.901297, "lng": 137.4256462, "radius": 200, "pt": 10}, {"name": "魚津埋没林博物館", "name_kana": "", "lat": 36.8224611, "lng": 137.3950101, "radius": 200, "pt": 9}, {"name": "ほたるいかミュージアム", "name_kana": "", "lat": 36.7740842, "lng": 137.3444938, "radius": 200, "pt": 6}, {"name": "富岩運河環水公園", "name_kana": "", "lat": 36.7093769, "lng": 137.2124329, "radius": 200, "pt": 6}, {"name": "内川（川の駅 新湊）", "name_kana": "", "lat": 36.7810011, "lng": 137.0876742, "radius": 200, "pt": 12}, {"name": "高岡市藤子・F・不二雄ふるさとギャラリー", "name_kana": "", "lat": 36.7512183, "lng": 137.026517, "radius": 200, "pt": 9}, {"name": "クロスランドおやべ", "name_kana": "", "lat": 36.6573139, "lng": 136.8782951, "radius": 200, "pt": 9}, {"name": "津幡ふるさと歴史館れきしる", "name_kana": "", "lat": 36.673859, "lng": 136.734647, "radius": 200, "pt": 7}, {"name": "兼六園", "name_kana": "", "lat": 36.5621278, "lng": 136.6626515, "radius": 200, "pt": 6}, {"name": "野々市市ふるさと歴史館", "name_kana": "", "lat": 36.5459059, "lng": 136.5997536, "radius": 200, "pt": 4}, {"name": "道の駅めぐみ白山", "name_kana": "", "lat": 36.5006684, "lng": 136.5470779, "radius": 200, "pt": 9}, {"name": "能美ふるさとミュージアム", "name_kana": "", "lat": 36.4429064, "lng": 136.5059836, "radius": 200, "pt": 9}, {"name": "サイエンスヒルズこまつ", "name_kana": "", "lat": 36.401922, "lng": 136.4556815, "radius": 200, "pt": 6}, {"name": "石川県九谷焼美術館", "name_kana": "", "lat": 36.302787, "lng": 136.310215, "radius": 200, "pt": 6}, {"name": "金津創作の森美術館", "name_kana": "", "lat": 36.2305022, "lng": 136.2614073, "radius": 200, "pt": 6}, {"name": "丸岡城", "name_kana": "", "lat": 36.1523454, "lng": 136.2721028, "radius": 200, "pt": 12}, {"name": "養浩館庭園", "name_kana": "", "lat": 36.0686037, "lng": 136.2242666, "radius": 200, "pt": 8}, {"name": "めがねミュージアム", "name_kana": "", "lat": 35.9426606, "lng": 136.1988316, "radius": 200, "pt": 6}, {"name": "「ちひろの生まれた家」記念館", "name_kana": "", "lat": 35.899832, "lng": 136.1668294, "radius": 200, "pt": 4}, {"name": "今庄宿(公徳園(福井藩本陣跡))", "name_kana": "", "lat": 35.7728168, "lng": 136.1967177, "radius": 50, "pt": 4}, {"name": "敦賀赤レンガ倉庫", "name_kana": "", "lat": 35.6620052, "lng": 136.0746772, "radius": 200, "pt": 12}];
         var prefix = '20241018_';
         var redMarkerCount = 0;
         var totalMarkerCount = markerData.reduce((total, marker) => total + marker.pt, 0);
@@ -102,15 +110,18 @@
 
         var circles = [];
         var zoomThreshold = 15;
+        var located = false;
         markerData.forEach(function(data) {
+            // マーカーを追加
             var key = prefix + data.lat + "_" + data.lng;
             var searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
             var nameHtml = `<div style="font-size: 16px;"><a href="https://x.com/search?q=${encodeURIComponent(searchKeyword)}&src=typed_query" target="_blank">${data.name}</a></div><div>${data.name_kana}</div><div style="font-size: 18px; color: #009;"><b>${data.pt} pt</b></div>`;
-            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
             var loc = [data.lat, data.lng];
+            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
             var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
                 .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
-            // 吹き出し部分のタップで色反転
+
+            // 吹き出し部分のタップで色反転(iOS対応)
             marker.on('popupopen', function(e) {
                 var popupElement = e.popup._container;
                 popupElement.addEventListener('click', function(event) {
@@ -135,7 +146,6 @@
             marker.on('dblclick', function() {
                 toggleMarkerColor(key, marker);
             });
-
             marker.on('touchend', function(e) {
                 if (e.originalEvent.detail === 2) { // ダブルタップ判定
                     toggleMarkerColor(key, marker);
@@ -198,19 +208,51 @@
         }
 
         // 現在地を取得
+        var locationMarker = null, radiusCircle = null;
+
+        // 現在位置を取得しマーカーを追加
+        function onLocationFound(e) {
+            var radius = e.accuracy / 2;
+
+            // カスタムアイコンを作成
+            var pulsingIcon = L.divIcon({
+                className: 'blinking',
+                html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
+                iconSize: [20, 20]
+            });
+
+            locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
+            radiusCircle = L.circle(e.latlng, radius);
+
+            map.addLayer(locationMarker);
+            map.addLayer(radiusCircle);
+            map.flyTo(e.latlng, 16);
+        }
+
+        function onLocationError(e) {
+            alert('位置情報を取得できませんでした。');
+        }
+
+        map.on('locationfound', onLocationFound);
+        map.on('locationerror', onLocationError);
+
+        // ボタンクリックイベントを設定
         document.getElementById('getLocation').addEventListener('click', function() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    var lat = position.coords.latitude;
-                    var lon = position.coords.longitude;
-                    map.setView([lat, lon], zoomThreshold); // Zoom to current location
-                }, function() {
-                    alert('位置情報を取得できませんでした。');
-                });
-            } else {
-                alert('このブラウザでは位置情報がサポートされていません。');
+            if(!located) {
+                map.locate({ setView: true, watch: true, maxZoom: 16 });
+                located = true;
+            }
+            if (locationMarker && radiusCircle) { 
+                if (map.hasLayer(locationMarker)) {
+                    map.removeLayer(locationMarker);
+                    map.removeLayer(radiusCircle);
+                } else {
+                    map.addLayer(locationMarker);
+                    map.addLayer(radiusCircle);
+                }
             }
         });
+
 
         // ボタンのエフェクト
         document.getElementById('getLocation').addEventListener('mouseenter', function() {
