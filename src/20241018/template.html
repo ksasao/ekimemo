@@ -220,6 +220,11 @@
         function onLocationFound(e) {
             var radius = e.accuracy / 2;
 
+            // 既存のマーカーがあれば削除または更新
+            if (locationMarker) {
+                map.removeLayer(locationMarker);
+                map.removeLayer(radiusCircle);
+            }
             locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
             radiusCircle = L.circle(e.latlng, radius);
 
