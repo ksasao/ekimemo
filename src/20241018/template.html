@@ -208,7 +208,7 @@
         }
 
         // 現在地を取得
-        var locationMarker = null, radiusCircle = null;
+        var locationMarker = null, radiusCircle = null, isTracking = false;
         // カスタムアイコンを作成
         var pulsingIcon = L.divIcon({
             className: 'blinking',
@@ -220,17 +220,25 @@
         function onLocationFound(e) {
             var radius = e.accuracy / 2;
 
-            // 既存のマーカーがあれば削除または更新
             if (locationMarker) {
-                map.removeLayer(locationMarker);
-                map.removeLayer(radiusCircle);
+                // 既存のマーカーの位置を更新
+                locationMarker.setLatLng(e.latlng);
+                radiusCircle.setLatLng(e.latlng);
+                radiusCircle.setRadius(radius);
+            } else {
+                // 初回のみマーカーを作成
+                locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
+                radiusCircle = L.circle(e.latlng, radius);
+                // 表示状態がオンの場合のみ追加
+                if (isTracking) {
+                    map.addLayer(locationMarker);
+                    map.addLayer(radiusCircle);
+                }
             }
-            locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
-            radiusCircle = L.circle(e.latlng, radius);
 
-            map.addLayer(locationMarker);
-            map.addLayer(radiusCircle);
-            map.panTo(e.latlng);
+            if (isTracking) {
+                map.panTo(e.latlng);
+            }
         }
 
         function onLocationError(e) {
@@ -242,17 +250,21 @@
 
         // ボタンクリックイベントを設定
         document.getElementById('getLocation').addEventListener('click', function() {
-            if(!located) {
+            if (!isTracking) {
+                // トラッキング開始
                 map.locate({ setView: true, watch: true, maxZoom: 16 });
-                located = true;
-            }
-            if (locationMarker && radiusCircle) { 
-                if (map.hasLayer(locationMarker)) {
-                    map.removeLayer(locationMarker);
-                    map.removeLayer(radiusCircle);
-                } else {
+                isTracking = true;
+                if (locationMarker && radiusCircle) {
                     map.addLayer(locationMarker);
                     map.addLayer(radiusCircle);
+                }
+            } else {
+                // トラッキング停止
+                map.stopLocate(); // 位置監視を停止
+                isTracking = false;
+                if (locationMarker && radiusCircle) {
+                    map.removeLayer(locationMarker);
+                    map.removeLayer(radiusCircle);
                 }
             }
         });
