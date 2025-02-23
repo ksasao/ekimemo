@@ -209,24 +209,23 @@
 
         // 現在地を取得
         var locationMarker = null, radiusCircle = null;
+        // カスタムアイコンを作成
+        var pulsingIcon = L.divIcon({
+            className: 'blinking',
+            html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
+            iconSize: [20, 20]
+        });
 
         // 現在位置を取得しマーカーを追加
         function onLocationFound(e) {
             var radius = e.accuracy / 2;
-
-            // カスタムアイコンを作成
-            var pulsingIcon = L.divIcon({
-                className: 'blinking',
-                html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
-                iconSize: [20, 20]
-            });
 
             locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
             radiusCircle = L.circle(e.latlng, radius);
 
             map.addLayer(locationMarker);
             map.addLayer(radiusCircle);
-            map.flyTo(e.latlng, 16);
+            map.panTo(e.latlng);
         }
 
         function onLocationError(e) {
