@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>駅メモ！対象駅 2025/03/04-2025/10/31 - 温泉むすめコラボ第5弾</title>
+    <title>駅メモ！スポット 2025/03/04-2025/10/31 - 温泉むすめx駅メモ！ まったり温泉巡礼の旅</title>
     <style>
         #map_b68e2f63d5196a6d0a8179cd86a9ef5c {
             position: relative;
@@ -129,13 +129,13 @@
                     fillOpacity: 0.15,
                     radius: 50
                 });
-                var circle250 = L.circle(loc, {
+                var circle = L.circle(loc, {
                     color: 'green',
                     fillColor: '#3f0',
                     fillOpacity: 0.15,
-                    radius: 250
+                    radius: data.radius
                 });
-                circles.push(circle250);
+                circles.push(circle);
                 circles.push(circle50);
             }
             

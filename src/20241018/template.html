@@ -208,8 +208,8 @@
         }
 
         // 現在地を取得
-        var locationMarker = null, radiusCircle = null, isTracking = false;
-        // カスタムアイコンを作成
+        var locationMarker = null, radiusCircle = null, isTracking = false, isFirstLocation = true;
+        // カスタムアイコンを作成（変更なし）
         var pulsingIcon = L.divIcon({
             className: 'blinking',
             html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
@@ -236,8 +236,10 @@
                 }
             }
 
-            if (isTracking) {
-                map.panTo(e.latlng);
+            // 初回のみ地図を現在位置に移動
+            if (isTracking && isFirstLocation) {
+                map.setView(e.latlng, 16); // 初回はズームレベル16で現在位置に移動
+                isFirstLocation = false;   // 初回フラグをオフ
             }
         }
 
@@ -252,8 +254,9 @@
         document.getElementById('getLocation').addEventListener('click', function() {
             if (!isTracking) {
                 // トラッキング開始
-                map.locate({ setView: true, watch: true, maxZoom: 16 });
+                map.locate({ watch: true, maxZoom: 16 }); // setView: true を削除
                 isTracking = true;
+                isFirstLocation = true; // トラッキング開始時に初回フラグをリセット
                 if (locationMarker && radiusCircle) {
                     map.addLayer(locationMarker);
                     map.addLayer(radiusCircle);
