@@ -122,15 +122,7 @@
             var loc = [data.lat, data.lng];
             var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
                 .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
-            // 吹き出し部分のタップで色反転
-            marker.on('popupopen', function(e) {
-                var popupElement = e.popup._container;
-                popupElement.addEventListener('click', function(event) {
-                    if (!event.target.classList.contains('leaflet-popup-close-button')){
-                        toggleMarkerColor(key, marker);
-                    }
-                });
-            });
+
             if(renKeys.includes(key)){
                 renMarkers.push(marker);
             }
@@ -293,8 +285,8 @@
         map.on('locationfound', onLocationFound);
         map.on('locationerror', onLocationError);
 
-                // ボタンクリックイベントを設定
-                document.getElementById('getLocation').addEventListener('click', function() {
+        // ボタンクリックイベントを設定
+        document.getElementById('getLocation').addEventListener('click', function() {
             if (!isTracking) {
                 // トラッキング開始
                 map.locate({ watch: true, maxZoom: 16 }); // setView: true を削除
