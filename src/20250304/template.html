@@ -102,7 +102,7 @@
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
-        var markerData = [{'name': '豊富', 'name_kana': 'とよとみ', 'lat': 45.104624, 'lon': 141.772088, 'radius': 0}, {'name': '豊富町観光情報センター', 'name_kana': '', 'lat': 45.1047246, 'lon': 141.7698781, 'radius': 1}, {'name': 'ふらっと★きた', 'name_kana': '', 'lat': 45.103188, 'lon': 141.7763131, 'radius': 1}]; // REPLACE_MARKER_DATA
+        var markerData = [{'name': '豊富', 'name_kana': 'とよとみ', 'lat': 45.104624, 'lon': 141.772088, 'radius': 0}, {'name': '豊富町観光情報センター', 'name_kana': 'とよとみまちかんこうじょうほうせんたー', 'lat': 45.1047246, 'lon': 141.7698781, 'radius': 200}, {'name': 'ふらっと★きた', 'name_kana': 'ふらっときた', 'lat': 45.103188, 'lon': 141.7763131, 'radius': 200}]; // REPLACE_MARKER_DATA
         var prefix = '20250304_';
         var redMarkerCount = 0;
         var totalMarkerCount = markerData.length;
@@ -121,8 +121,10 @@
         var circles = [];
         var zoomThreshold = 14;
         markerData.forEach(function(data) {
-            var key = prefix + data.lat + "_" + data.lon;
-            var nameHtml = `<div style="font-size: 16px;">${data.name}</div><div>${data.name_kana}</div>`;
+            // マーカーを追加
+            var key = prefix + data.lat + "_" + data.lng;
+            var searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
+            var nameHtml = `<div style="font-size: 16px;"><a href="https://x.com/search?q=%22${encodeURIComponent(searchKeyword)}%22&src=typed_query" target="_blank">${data.name}</a></div><div>${data.name_kana}</div></b></div>`;
 
             var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
             var loc = [data.lat, data.lon];
@@ -218,7 +220,7 @@
 
         // 現在地を取得
         var locationMarker = null, radiusCircle = null, isTracking = false, isFirstLocation = true;
-        // カスタムアイコンを作成（変更なし）
+        // カスタムアイコンを作成
         var pulsingIcon = L.divIcon({
             className: 'blinking',
             html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
