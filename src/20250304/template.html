@@ -2,46 +2,61 @@
 <html lang="ja-jp">
 <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <script>
-        L_NO_TOUCH = false;
-        L_DISABLE_3D = false;
-    </script>
-    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
-    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>駅メモ！スポット 2025/03/04-2025/10/31 - 温泉むすめx駅メモ！ まったり温泉巡礼の旅</title>
+    
+    <!-- 外部ライブラリ -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>駅メモ！スポット 2025/03/04-2025/10/31 - 温泉むすめx駅メモ！ まったり温泉巡礼の旅</title>
+    
+    <!-- スタイルシート -->
     <style>
-        #map_b68e2f63d5196a6d0a8179cd86a9ef5c {
-            position: relative;
-            width: 100.0%;
-            height: 100.0%;
-            left: 0.0%;
-            top: 0.0%;
+        /* ベーススタイル */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
-        .leaflet-container { font-size: 1rem; }
+        
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Leaflet スタイルのカスタマイズ */
+        .leaflet-container { 
+            font-size: 1rem; 
+        }
+        
         .leaflet-marker-icon {
             touch-action: none;
         }
+        
         .leaflet-marker-icon:active {
             outline: none;
             -webkit-tap-highlight-color: rgba(0,0,0,0);
         }
+        
+        /* マーカーアニメーション */
         .blinking {
             animation: blink 1s infinite;
         }
+        
         @keyframes blink {
             0% { opacity: 1; }
             50% { opacity: 0; }
             100% { opacity: 1; }
         }
-        /* 表示部分の袋文字スタイル */
+        
+        /* UI要素 */
         #marker-count {
             position: fixed;
             bottom: 3px;
@@ -50,145 +65,282 @@
             font-size: 24px;
             font-weight: bold; 
             color: white;
-            text-shadow:  1px 1px 4px rgba(0, 0, 0, 0.9);
-            z-index: 1001; }
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9);
+            z-index: 1001;
+        }
+        
+        #attribution {
+            position: fixed;
+            bottom: 0px;
+            left: 0px;
+            background-color: white;
+            padding: 0px;
+            border: 0px solid white;
+            font-size: 10px;
+            z-index: 1000;
+        }
+        
+        #location-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(66, 133, 244, 0.7);
+            border: none;
+            outline: none;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+        }
+        
+        #location-button:hover {
+            background-color: rgba(51, 103, 214, 0.8);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+        }
+        
+        /* 追跡モード用アイコン */
+        #location-button.following {
+            background-color: rgba(0, 128, 0, 0.7);
+        }
+        
+        #location-button.following:hover {
+            background-color: rgba(0, 100, 0, 0.8);
+        }
     </style>
 </head>
+
 <body>
-    <div style="
-        position: fixed;
-        bottom: 0px;
-        left: 0px;
-        background-color: white;
-        padding: 0px;
-        border: 0px solid white;
-        font-size: 10px;
-        z-index: 1000;
-    ">
+    <!-- UI要素 -->
+    <div id="attribution">
         駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank">駅データ</a> を利用しています
     </div>
+    
     <div id="marker-count">
         <span id="red-markers-count" style="font-size: 48px;">0</span>/<span id="total-markers-count">0</span>
     </div>
-    <div class="folium-map" id="map_b68e2f63d5196a6d0a8179cd86a9ef5c"></div>
-
-    <button id="getLocation" style="
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background-color: rgba(66, 133, 244, 0.7);
-        border: none;
-        outline: none;
-        cursor: pointer;
-        z-index: 1001;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
-    ">
+    
+    <div id="map"></div>
+    
+    <button id="location-button">
         <i class="fas fa-crosshairs" style="color: white; font-size: 24px;"></i>
     </button>
 
+    <!-- 必要なライブラリをロード -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- マーカーデータ -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var map = L.map('map_b68e2f63d5196a6d0a8179cd86a9ef5c', {
-            zoomSnap: 0.1, // 0.1単位でズームレベルが変わる 
-            zoomDelta: 0.1, // マウスホイールで0.1単位でズーム
-            wheelPxPerZoomLevel: 120 // スムーズなズーム
-        }).setView([35.682839, 139.759455], 5);
-        
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-        
         var markerData = [{'name': '豊富', 'name_kana': 'とよとみ', 'lat': 45.104624, 'lon': 141.772088, 'radius': 0}, {'name': '豊富町観光情報センター', 'name_kana': 'とよとみまちかんこうじょうほうせんたー', 'lat': 45.1047246, 'lon': 141.7698781, 'radius': 200}, {'name': 'ふらっと★きた', 'name_kana': 'ふらっときた', 'lat': 45.103188, 'lon': 141.7763131, 'radius': 200}]; // REPLACE_MARKER_DATA
-        var prefix = '20250304_';
-        var redMarkerCount = 0;
-        var totalMarkerCount = markerData.length;
-
-        // 既存のredマーカーのカウント
-        markerData.forEach(function(data) {
-            var key = prefix + data.lat + "_" + data.lon;
-            var storedColor = localStorage.getItem(key);
-            if (storedColor === 'red') {
-                redMarkerCount++;
-            }
+    </script>
+    
+    <!-- メインスクリプト -->
+    <script>
+        // グローバル変数
+        let map;
+        let redMarkerCount = 0;
+        let totalMarkerCount = markerData.length;
+        let locationMarker = null;
+        let radiusCircle = null;
+        let isTracking = false;
+        let isFollowing = false;
+        let isFirstLocation = true;
+        let userInteracted = false;
+        const circles = [];
+        
+        // 定数
+        const PREFIX = '20250304_';
+        const ZOOM_THRESHOLD = 14;
+        const DEFAULT_CENTER = [35.682839, 139.759455];
+        const DEFAULT_ZOOM = 5;
+        const INITIAL_LOCATION_ZOOM = 16; // 初回の位置表示時のズームレベル
+        
+        // ドキュメント読み込み完了時の処理
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
         });
-
-        updateMarkerCount();
-
-        var circles = [];
-        var zoomThreshold = 14;
-        markerData.forEach(function(data) {
-            // マーカーを追加
-            var key = prefix + data.lat + "_" + data.lng;
-            var searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
-            var nameHtml = `<div style="font-size: 16px;"><a href="https://x.com/search?q=%22${encodeURIComponent(searchKeyword)}%22&src=typed_query" target="_blank">${data.name}</a></div><div>${data.name_kana}</div></b></div>`;
-
-            var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
-            var loc = [data.lat, data.lon];
-            var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
-                .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
+        
+        /**
+         * アプリケーションの初期化
+         */
+        function initApp() {
+            // マップの初期化
+            initMap();
             
+            // マーカーの初期化
+            initMarkers();
+            
+            // 位置追跡ボタンの設定
+            setupLocationTracking();
+        }
+        
+        /**
+         * マップを初期化する
+         */
+        function initMap() {
+            map = L.map('map', {
+                zoomSnap: 0.1,
+                zoomDelta: 0.1,
+                wheelPxPerZoomLevel: 120
+            }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+            
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            map.on('zoomend', updateCircleVisibility);
+            map.on('moveend', updateCircleVisibility);
+            map.on('locationfound', onLocationFound);
+            map.on('locationerror', onLocationError);
+            
+            // ユーザーの操作を検知するイベントリスナー
+            map.on('dragstart', onUserInteraction);
+            map.on('zoomstart', onUserInteraction);
+            map.on('touchstart', function(e) {
+                // タッチ操作が2本指以上の場合（ピンチイン・アウト）
+                if (e.originalEvent.touches && e.originalEvent.touches.length > 1) {
+                    onUserInteraction();
+                }
+            });
+        }
+        
+        /**
+         * ユーザーの地図操作を検知したときの処理
+         */
+        function onUserInteraction() {
+            if (isFollowing) {
+                console.log("ユーザーによる地図操作を検知しました。追跡モードを終了します。");
+                userInteracted = true;
+                
+                // 追跡モードを終了（位置情報の取得は継続）
+                isFollowing = false;
+                
+                // ボタンの見た目を更新
+                updateLocationButtonAppearance();
+            }
+        }
+        
+        /**
+         * マーカーを初期化する
+         */
+        function initMarkers() {
+            // 既存のredマーカーのカウント
+            markerData.forEach(function(data) {
+                const key = getStorageKey(data);
+                if (localStorage.getItem(key) === 'red') {
+                    redMarkerCount++;
+                }
+            });
+            
+            updateMarkerCount();
+            
+            // マーカーとサークルの作成
+            markerData.forEach(function(data) {
+                createMarker(data);
+            });
+        }
+        
+        /**
+         * 単一マーカーを作成する
+         */
+        function createMarker(data) {
+            const key = getStorageKey(data);
+            const searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
+            const nameHtml = createPopupContent(data, searchKeyword);
+            
+            const color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
+            const loc = [data.lat, data.lon];
+            const marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
+                .bindPopup(nameHtml, {maxWidth: 300});
             
             // 半径を指定した円を描画
-            if(data.radius > 0){
-                var circle50 = L.circle(loc, {
-                    color: 'red',
-                    fillColor: '#f03',
-                    fillOpacity: 0.15,
-                    radius: 50
-                });
-                var circle = L.circle(loc, {
-                    color: 'green',
-                    fillColor: '#3f0',
-                    fillOpacity: 0.15,
-                    radius: data.radius
-                });
-                circles.push(circle);
-                circles.push(circle50);
+            if(data.radius > 0) {
+                createCircles(loc, data.radius);
             }
             
-            // ダブルタップイベント
+            // イベントリスナーの設定
+            setupMarkerEvents(marker, key);
+        }
+        
+        /**
+         * マーカーのためのポップアップ内容を作成
+         */
+        function createPopupContent(data, searchKeyword) {
+            return '<div style="white-space: nowrap; text-align: center;">' + 
+                   `<div style="font-size: 16px;"><a href="https://x.com/search?q=%22${encodeURIComponent(searchKeyword)}%22&src=typed_query" target="_blank">${data.name}</a></div>` +
+                   `<div>${data.name_kana}</div></b></div>`;
+        }
+        
+        /**
+         * マーカーのイベントを設定
+         */
+        function setupMarkerEvents(marker, key) {
+            // ダブルクリックイベント
             marker.on('dblclick', function() {
                 toggleMarkerColor(key, marker);
             });
-
+            
+            // ダブルタップイベント（モバイル）
             marker.on('touchend', function(e) {
-                if (e.originalEvent.detail === 2) { // ダブルタップ判定
+                if (e.originalEvent.detail === 2) {
                     toggleMarkerColor(key, marker);
                 }
             });
-
-            // 吹き出し部分のタップで色反転(iOS対応)
+            
+            // ポップアップ内のタップ（iOS対応）
             marker.on('popupopen', function(e) {
-                var popupElement = e.popup._container;
+                const popupElement = e.popup._container;
                 popupElement.addEventListener('click', function(event) {
                     if (!event.target.classList.contains('leaflet-popup-close-button')){
                         toggleMarkerColor(key, marker);
                     }
                 });
             });
-        });
-
-        function updateCircleVisibility() {
-            circles.forEach(function(circle) {
-                if (map.getZoom() > zoomThreshold) {
-                    if (!map.hasLayer(circle)) {
-                        circle.addTo(map);
-                    }
-                } else {
-                    if (map.hasLayer(circle)) {
-                        map.removeLayer(circle);
-                    }
-                }
+        }
+        
+        /**
+         * マーカーアイコンを作成
+         */
+        function createMarkerIcon(color) {
+            return new L.Icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
             });
         }
-
-        map.on('zoomend', updateCircleVisibility);
-        map.on('moveend', updateCircleVisibility);
-
+        
+        /**
+         * 円を作成（半径表示用）
+         */
+        function createCircles(location, radius) {
+            const innerCircle = L.circle(location, {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.15,
+                radius: 50
+            });
+            
+            const outerCircle = L.circle(location, {
+                color: 'green',
+                fillColor: '#3f0',
+                fillOpacity: 0.15,
+                radius: radius
+            });
+            
+            circles.push(innerCircle);
+            circles.push(outerCircle);
+        }
+        
+        /**
+         * マーカーの色を切り替える
+         */
         function toggleMarkerColor(key, marker) {
             if (localStorage.getItem(key) === 'red') {
                 marker.setIcon(createMarkerIcon('blue'));
@@ -201,36 +353,116 @@
             }
             updateMarkerCount();
         }
-
-        function createMarkerIcon(color) {
-            return new L.Icon({
-                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-            });
-        }
-
+        
+        /**
+         * マーカー数の表示を更新
+         */
         function updateMarkerCount() {
             document.getElementById('red-markers-count').textContent = redMarkerCount;
             document.getElementById('total-markers-count').textContent = totalMarkerCount;
         }
-
-        // 現在地を取得
-        var locationMarker = null, radiusCircle = null, isTracking = false, isFirstLocation = true;
-        // カスタムアイコンを作成
-        var pulsingIcon = L.divIcon({
-            className: 'blinking',
-            html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
-            iconSize: [20, 20]
-        });
-
-        // 現在位置を取得しマーカーを追加
+        
+        /**
+         * ズームレベルに応じて円の表示を更新
+         */
+        function updateCircleVisibility() {
+            circles.forEach(function(circle) {
+                if (map.getZoom() > ZOOM_THRESHOLD) {
+                    if (!map.hasLayer(circle)) {
+                        circle.addTo(map);
+                    }
+                } else {
+                    if (map.hasLayer(circle)) {
+                        map.removeLayer(circle);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * ストレージキーを取得
+         */
+        function getStorageKey(data) {
+            return PREFIX + data.lat + "_" + data.lon;
+        }
+        
+        /**
+         * 位置追跡機能の設定
+         */
+        function setupLocationTracking() {
+            const locationButton = document.getElementById('location-button');
+            
+            locationButton.addEventListener('click', function() {
+                toggleLocationTracking();
+            });
+            
+            // ボタンのタッチイベント
+            locationButton.addEventListener('touchend', function() {
+                this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+            });
+        }
+        
+        /**
+         * 位置追跡ボタンの見た目を更新
+         */
+        function updateLocationButtonAppearance() {
+            const locationButton = document.getElementById('location-button');
+            
+            if (isFollowing) {
+                locationButton.classList.add('following');
+            } else {
+                locationButton.classList.remove('following');
+            }
+        }
+        
+        /**
+         * 位置追跡の切り替え
+         */
+        function toggleLocationTracking() {
+            if (!isTracking) {
+                // トラッキング開始
+                map.locate({ watch: true, maxZoom: INITIAL_LOCATION_ZOOM });
+                isTracking = true;
+                isFollowing = true;
+                isFirstLocation = true;
+                userInteracted = false;
+                
+                if (locationMarker && radiusCircle) {
+                    map.addLayer(locationMarker);
+                    map.addLayer(radiusCircle);
+                }
+            } else if (isTracking && !isFollowing) {
+                // 追跡モードのみ再開（現在のズームレベルを維持）
+                isFollowing = true;
+                userInteracted = false;
+                
+                // 現在地に移動（ズームレベルはそのまま）
+                if (locationMarker) {
+                    // ズーム率を変更せずに中心位置のみ移動
+                    map.panTo(locationMarker.getLatLng());
+                }
+            } else {
+                // トラッキング停止
+                map.stopLocate();
+                isTracking = false;
+                isFollowing = false;
+                
+                if (locationMarker && radiusCircle) {
+                    map.removeLayer(locationMarker);
+                    map.removeLayer(radiusCircle);
+                }
+            }
+            
+            // ボタンの見た目を更新
+            updateLocationButtonAppearance();
+        }
+        
+        /**
+         * 位置が見つかった時のイベントハンドラ
+         */
         function onLocationFound(e) {
-            var radius = e.accuracy / 2;
-
+            const radius = e.accuracy / 2;
+            
             if (locationMarker) {
                 // 既存のマーカーの位置を更新
                 locationMarker.setLatLng(e.latlng);
@@ -238,66 +470,44 @@
                 radiusCircle.setRadius(radius);
             } else {
                 // 初回のみマーカーを作成
+                const pulsingIcon = L.divIcon({
+                    className: 'blinking',
+                    html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
+                    iconSize: [20, 20]
+                });
+                
                 locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
                 radiusCircle = L.circle(e.latlng, radius);
+                
                 // 表示状態がオンの場合のみ追加
                 if (isTracking) {
                     map.addLayer(locationMarker);
                     map.addLayer(radiusCircle);
                 }
             }
-
-            // 初回のみ地図を現在位置に移動
-            if (isTracking && isFirstLocation) {
-                map.setView(e.latlng, 16); // 初回はズームレベル16で現在位置に移動
-                isFirstLocation = false;   // 初回フラグをオフ
+            
+            // 追跡モードが有効かつユーザーによる操作がない場合、地図を現在位置に移動
+            if (isTracking && isFollowing && !userInteracted) {
+                if (isFirstLocation) {
+                    // 初回は指定のズームレベルで表示
+                    map.setView(e.latlng, INITIAL_LOCATION_ZOOM);
+                    isFirstLocation = false;
+                } else {
+                    // 以降は現在のズームレベルを維持して位置のみ移動
+                    map.panTo(e.latlng);
+                }
             }
         }
-
+        
+        /**
+         * 位置取得エラー時のイベントハンドラ
+         */
         function onLocationError(e) {
             alert('位置情報を取得できませんでした。');
+            isTracking = false;
+            isFollowing = false;
+            updateLocationButtonAppearance();
         }
-
-        map.on('locationfound', onLocationFound);
-        map.on('locationerror', onLocationError);
-
-                // ボタンクリックイベントを設定
-                document.getElementById('getLocation').addEventListener('click', function() {
-            if (!isTracking) {
-                // トラッキング開始
-                map.locate({ watch: true, maxZoom: 16 }); // setView: true を削除
-                isTracking = true;
-                isFirstLocation = true; // トラッキング開始時に初回フラグをリセット
-                if (locationMarker && radiusCircle) {
-                    map.addLayer(locationMarker);
-                    map.addLayer(radiusCircle);
-                }
-            } else {
-                // トラッキング停止
-                map.stopLocate(); // 位置監視を停止
-                isTracking = false;
-                if (locationMarker && radiusCircle) {
-                    map.removeLayer(locationMarker);
-                    map.removeLayer(radiusCircle);
-                }
-            }
-        });
-
-        // ボタンのエフェクト
-        document.getElementById('getLocation').addEventListener('mouseenter', function() {
-            this.style.backgroundColor = 'rgba(51, 103, 214, 0.8)'; // Slightly darker semi-transparent blue on hover
-            this.style.boxShadow = '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)';
-        });
-        document.getElementById('getLocation').addEventListener('mouseleave', function() {
-            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
-            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
-        });
-        document.getElementById('getLocation').addEventListener('touchend', function() {
-            this.style.backgroundColor = 'rgba(66, 133, 244, 0.7)';
-            this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
-        });
-
-    });
     </script>
 </body>
 </html>
