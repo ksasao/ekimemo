@@ -1,6 +1,6 @@
 {
-    "name": "温むす2025",
-    "short_name": "App",
+    "name": "温むす2025 - 駅メモスポット",
+    "short_name": "温むす2025",
     "icons": [
       {
         "src": "icon_192.png",
@@ -14,6 +14,6 @@
         "purpose": "any maskable"
       }
     ],
-    "display": "standalone"
+    "display": "browser"
   }
   
