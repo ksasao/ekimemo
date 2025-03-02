@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 import shutil
 import os
+import glob
 
 # CSVファイルを読み込む
 csv_file = 'data.csv'
@@ -36,5 +37,10 @@ os.makedirs(output_path, exist_ok=True)
 with open(os.path.join(output_path, 'index.html'), 'w', encoding='utf-8') as file:
     file.write(html_content)
 
-# icon.pngをoutput_pathにコピーする
-shutil.copy('icon.png',output_path)
+# アイコン画像をoutput_pathにコピーする
+png_files = glob.glob("*.png")
+for file in png_files:
+    shutil.copy(file, output_path)
+
+# Android用manifestファイルをコピー
+shutil.copy('manifest.json',os.path.join(output_path))
