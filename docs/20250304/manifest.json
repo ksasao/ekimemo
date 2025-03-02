@@ -8,13 +8,12 @@
         "type": "image/png"
       },
       {
-        "src": "icon_512.png",
+        "src": "icon_512c.png",
         "sizes": "512x512",
-        "type": "image/png"
+        "type": "image/png",
+        "purpose": "any maskable"
       }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
     "display": "standalone"
   }
   
