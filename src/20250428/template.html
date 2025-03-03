@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>駅メモ！スポット 2025/03/04-2025/10/31 - 温泉むすめx駅メモ！ まったり温泉巡礼の旅</title>
+    <title>駅メモ！スポット 2025/04/28-2025/10/31 - けものフレンズコラボキャンペーン</title>
     
     <!-- 外部ライブラリ -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
@@ -146,7 +146,7 @@
 
     <!-- マーカーデータ -->
     <script>
-        var markerData = [{'name': '豊富', 'name_kana': 'とよとみ', 'lat': 45.104624, 'lon': 141.772088, 'radius': 0}, {'name': '豊富町観光情報センター', 'name_kana': 'とよとみまちかんこうじょうほうせんたー', 'lat': 45.1047246, 'lon': 141.7698781, 'radius': 200}, {'name': 'ふらっと★きた', 'name_kana': 'ふらっときた', 'lat': 45.103188, 'lon': 141.7763131, 'radius': 200}]; // REPLACE_MARKER_DATA
+        var markerData = [{'name': '上野', 'name_kana': 'うえの', 'lat': 35.71379, 'lng': 139.777043, 'radius': 0, 'pt': 1}, {'name': '上野動物園', 'name_kana': 'うえのどうぶつえん', 'lat': 35.7160153, 'lng': 139.772882, 'radius': 200, 'pt': 1}]; // REPLACE_MARKER_DATA
     </script>
     
     <!-- メインスクリプト -->
@@ -164,7 +164,7 @@
         const circles = [];
         
         // 定数
-        const PREFIX = '20250304_';
+        const PREFIX = '20250428_';
         const ZOOM_THRESHOLD = 14;
         const DEFAULT_CENTER = [35.682839, 139.759455];
         const DEFAULT_ZOOM = 5;
@@ -264,7 +264,7 @@
             const nameHtml = createPopupContent(data, searchKeyword);
             
             const color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
-            const loc = [data.lat, data.lon];
+            const loc = [data.lat, data.lng];
             const marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
                 .bindPopup(nameHtml, {maxWidth: 300});
             
@@ -281,9 +281,19 @@
          * マーカーのためのポップアップ内容を作成
          */
         function createPopupContent(data, searchKeyword) {
+            const animals = ['虎', '牛', '鹿', '鶴', '熊'];
+            let highlightedName = data.name;
+            
+            animals.forEach(animal => {
+                highlightedName = highlightedName.replace(
+                    new RegExp(animal, 'g'), 
+                    `<span style="color: red;">${animal}</span>`
+                );
+            });
+
             return '<div style="white-space: nowrap; text-align: center;">' + 
-                   `<div style="font-size: 16px;"><a href="https://x.com/search?q=%22${encodeURIComponent(searchKeyword)}%22&src=typed_query" target="_blank">${data.name}</a></div>` +
-                   `<div>${data.name_kana}</div></b></div>`;
+                `<div style="font-size: 16px;"><a href="https://x.com/search?q=%22${encodeURIComponent(searchKeyword)}%22&src=typed_query" target="_blank">${highlightedName}</a></div>` +
+                `<div>${data.name_kana}</div></b></div>`;
         }
         
         /**
@@ -394,7 +404,7 @@
          * ストレージキーを取得
          */
         function getStorageKey(data) {
-            return PREFIX + data.lat + "_" + data.lon;
+            return PREFIX + data.lat + "_" + data.lng;
         }
         
         /**
