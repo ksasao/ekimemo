@@ -146,7 +146,7 @@
 
     <!-- マーカーデータ -->
     <script>
-        var markerData = [{'name': '豊富', 'name_kana': 'とよとみ', 'lat': 45.104624, 'lon': 141.772088, 'radius': 0}, {'name': '豊富町観光情報センター', 'name_kana': 'とよとみまちかんこうじょうほうせんたー', 'lat': 45.1047246, 'lon': 141.7698781, 'radius': 200}, {'name': 'ふらっと★きた', 'name_kana': 'ふらっときた', 'lat': 45.103188, 'lon': 141.7763131, 'radius': 200}]; // REPLACE_MARKER_DATA
+        var markerData = [{'name': '豊富', 'name_kana': 'とよとみ', 'lat': 45.104624, 'lon': 141.772088, 'radius': 0}, {'name': '豊富町観光情報センター', 'name_kana': 'とよとみまちかんこうじょうほうせんたー', 'lat': 45.1047246, 'lon': 141.7698781, 'radius': 1}, {'name': 'ふらっと★きた', 'name_kana': 'ふらっときた', 'lat': 45.103188, 'lon': 141.7763131, 'radius': 200}]; // REPLACE_MARKER_DATA
     </script>
     
     <!-- メインスクリプト -->
@@ -224,7 +224,6 @@
          */
         function onUserInteraction() {
             if (isFollowing) {
-                console.log("ユーザーによる地図操作を検知しました。追跡モードを終了します。");
                 userInteracted = true;
                 
                 // 追跡モードを終了（位置情報の取得は継続）
@@ -331,12 +330,16 @@
          * 円を作成（半径表示用）
          */
         function createCircles(location, radius) {
-            const innerCircle = L.circle(location, {
-                color: 'red',
-                fillColor: '#f03',
-                fillOpacity: 0.15,
-                radius: 50
-            });
+            if(radius < 50){ // 半径が小さいときは未確定とみなし 赤50m, 緑200mの円を描画
+                const innerCircle = L.circle(location, {
+                    color: 'red',
+                    fillColor: '#f03',
+                    fillOpacity: 0.15,
+                    radius: 50
+                });
+                circles.push(innerCircle);
+                radius = 200; // 外側の円(緑)は200mとする
+            }
             
             const outerCircle = L.circle(location, {
                 color: 'green',
@@ -344,8 +347,6 @@
                 fillOpacity: 0.15,
                 radius: radius
             });
-            
-            circles.push(innerCircle);
             circles.push(outerCircle);
         }
         
