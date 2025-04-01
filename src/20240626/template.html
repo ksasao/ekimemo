@@ -102,6 +102,9 @@
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
         
+        // 複数の吹き出しが開けるようにLeafletの標準動作を変更
+        map.closePopupOnClick = false;
+
         var markerData = [{"area": 0, "station": "美深", "station_kana": "びふか", "denco": "ふぶ", "lat": 44.482951, "lng": 142.350597, "radius": 0, "count": 1}, {"area": 2, "station": "五反田", "station_kana": "ごたんだ", "denco": "ニャッシュ ダッチュー", "lat": 35.625974, "lng": 139.723822, "radius": 0, "count": 2}, {"area": 2, "station": "東京貨物ターミナル", "station_kana": "とうきょうかもつたーみなる", "denco": "にころ", "lat": 35.5958411, "lng": 139.7577865, "radius": 300, "count": 1}, {"area": 4, "station": "北巽", "station_kana": "きたたつみ", "denco": "レン", "lat": 34.652982, "lng": 135.554964, "radius": 0, "count": 1}, {"area": 4, "station": "南巽", "station_kana": "みなみたつみ", "denco": "レン", "lat": 34.643261, "lng": 135.553298, "radius": 0, "count": 1}]; // REPLACE_MARKER_DATA
         var prefix = '20240626_';
         var redMarkerCount = 0;
@@ -121,8 +124,12 @@
             var color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
             var loc = [data.lat, data.lng];
             var marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
-                .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {maxWidth: 300});
-
+                .bindPopup('<div style="white-space: nowrap; text-align: center;">' + nameHtml + '</div>', {
+                    maxWidth: 300,
+                    autoClose: false,  // 自動で閉じない
+                    closeOnClick: false  // クリックしても閉じない
+                });
+                
             if(renKeys.includes(key)){
                 renMarkers.push(marker);
             }
