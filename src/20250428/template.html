@@ -3,7 +3,7 @@
 <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>駅メモ！スポット 2025/04/28-2025/10/31 - けものフレンズコラボキャンペーン</title>
+    <title>駅メモ！スポット 2025/04/28-2025/10/31 - 全国のフレンズたちに会いに行こう！駅メモ！探検ツアー けものフレンズコラボキャンペーン</title>
     
     <!-- 外部ライブラリ -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
@@ -276,6 +276,30 @@
             // イベントリスナーの設定
             setupMarkerEvents(marker, key);
         }
+
+        /**
+         * 円を作成（半径表示用）
+         */
+         function createCircles(location, radius) {
+            if(radius < 50){ // 半径が小さいときは未確定とみなし 赤50m, 緑200mの円を描画
+                const innerCircle = L.circle(location, {
+                    color: 'red',
+                    fillColor: '#f03',
+                    fillOpacity: 0.15,
+                    radius: 50
+                });
+                circles.push(innerCircle);
+                radius = 200; // 外側の円(緑)は200mとする
+            }
+            
+            const outerCircle = L.circle(location, {
+                color: 'green',
+                fillColor: '#3f0',
+                fillOpacity: 0.15,
+                radius: radius
+            });
+            circles.push(outerCircle);
+        }
         
         /**
          * マーカーのためのポップアップ内容を作成
@@ -335,28 +359,6 @@
                 popupAnchor: [1, -34],
                 shadowSize: [41, 41]
             });
-        }
-        
-        /**
-         * 円を作成（半径表示用）
-         */
-        function createCircles(location, radius) {
-            const innerCircle = L.circle(location, {
-                color: 'red',
-                fillColor: '#f03',
-                fillOpacity: 0.15,
-                radius: 50
-            });
-            
-            const outerCircle = L.circle(location, {
-                color: 'green',
-                fillColor: '#3f0',
-                fillOpacity: 0.15,
-                radius: radius
-            });
-            
-            circles.push(innerCircle);
-            circles.push(outerCircle);
         }
         
         /**
