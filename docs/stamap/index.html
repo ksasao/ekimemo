@@ -482,8 +482,8 @@
                     }
                 }
                 
-                // 5km以内の駅のみを返す（必要に応じて調整）
-                if (nearestStation && nearestStation.distance <= 5) {
+                // 50km以内の駅のみを返す（必要に応じて調整）
+                if (nearestStation && nearestStation.distance <= 50) {
                     return nearestStation;
                 }
                 
