@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StaMap - 駅情報付き写真Viewer</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzAiIGZpbGw9IiMzMTc2YmUiIC8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjgiIGZpbGw9IiM0ODk0ZGEiIC8+CiAgPHBhdGggZD0iTTMyIDE0Yy02IDAtMTEgNC41LTExIDEwYzAgNyAxMSAyMCAxMSAyMHMxMS0xMyAxMS0yMGMwLTUuNS01LTEwLTExLTEweiIgZmlsbD0iI2U3NGMzYyIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSI0IiBmaWxsPSJ3aGl0ZSIgLz4KICA8cmVjdCB4PSIxNCIgeT0iNDIiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iIzMzMzMzMyIgLz4KICA8cmVjdCB4PSIxNCIgeT0iNDkiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iIzMzMzMzMyIgLz4KICA8cmVjdCB4PSIxNyIgeT0iNDIiIHdpZHRoPSIyIiBoZWlnaHQ9IjEwIiByeD0iMC41IiBmaWxsPSIjNWQ0MDM3IiAvPgogIDxyZWN0IHg9IjI0IiB5PSI0MiIgd2lkdGg9IjIiIGhlaWdodD0iMTAiIHJ4PSIwLjUiIGZpbGw9IiM1ZDQwMzciIC8+CiAgPHJlY3QgeD0iMzEiIHk9IjQyIiB3aWR0aD0iMiIgaGVpZ2h0PSIxMCIgcng9IjAuNSIgZmlsbD0iIzVkNDAzNyIgLz4KICA8cmVjdCB4PSIzOCIgeT0iNDIiIHdpZHRoPSIyIiBoZWlnaHQ9IjEwIiByeD0iMC41IiBmaWxsPSIjNWQ0MDM3IiAvPgogIDxyZWN0IHg9IjQ1IiB5PSI0MiIgd2lkdGg9IjIiIGhlaWdodD0iMTAiIHJ4PSIwLjUiIGZpbGw9IiM1ZDQwMzciIC8+Cjwvc3ZnPg==" type="image/svg+xml">
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f7;
+            color: #333;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .description {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #555;
+            line-height: 1.5;
+        }
+        .data-credit {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #666;
+            padding: 10px;
+            background-color: #f0f7ff;
+            border-radius: 5px;
+        }
+        .data-credit a {
+            color: #1565c0;
+            text-decoration: none;
+        }
+        .data-credit a:hover {
+            text-decoration: underline;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .form-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .input-container {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        button {
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #005bbf;
+        }
+        #gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .image-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        .image-info {
+            padding: 15px;
+        }
+        .image-info h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .map-link {
+            display: inline-block;
+            background-color: #34a853;
+            color: white;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        .map-link:hover {
+            background-color: #2d8e47;
+        }
+        .no-location {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+        .error {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .stats {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        .station-info {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .station-name {
+            font-weight: bold;
+            color: #1565c0;
+        }
+        .station-details {
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #455a64;
+        }
+        .distance-info {
+            font-size: 0.8rem;
+            color: #546e7a;
+            margin-top: 3px;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: none;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #4caf50;
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>StaMap - 駅情報付き写真Viewer</h1>
+        <p class="description">写真の位置情報を参照して最寄り駅を表示します。写真はブラウザ内で処理され、外部に送信されることはありません。</p>
+        
+        <div class="data-credit">
+            使用データ: <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank">駅データ</a> (日本全国の鉄道路線・駅のデータベース収集プロジェクト)
+        </div>
+        
+        <div class="form-section">
+            <div class="input-container">
+                <label for="fileInput">JPEG/JPGファイルを選択してください：</label>
+                <input type="file" id="fileInput" accept=".jpg,.jpeg" multiple>
+            </div>
+            <button id="processButton">処理開始</button>
+            <div id="statusMessage"></div>
+            <div id="progressContainer" class="progress-container">
+                <div id="progressBar" class="progress-bar"></div>
+            </div>
+        </div>
+        
+        <div id="stats" class="stats" style="display: none;">
+            <p>処理された画像: <span id="processedCount">0</span>枚</p>
+            <p>位置情報あり: <span id="withLocationCount">0</span>枚</p>
+            <p>最寄り駅検出: <span id="withStationCount">0</span>枚</p>
+        </div>
+        
+        <div id="gallery"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const processButton = document.getElementById('processButton');
+            const gallery = document.getElementById('gallery');
+            const statusMessage = document.getElementById('statusMessage');
+            const stats = document.getElementById('stats');
+            const processedCountElement = document.getElementById('processedCount');
+            const withLocationCountElement = document.getElementById('withLocationCount');
+            const withStationCountElement = document.getElementById('withStationCount');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            
+            let processedCount = 0;
+            let withLocationCount = 0;
+            let withStationCount = 0;
+            let stationData = [];
+            let isStationDataLoaded = false;
+            
+            // 駅データの読み込み
+            async function loadStationData() {
+                if (isStationDataLoaded) return Promise.resolve(stationData);
+                
+                statusMessage.innerHTML = '<div class="loading">駅データを読み込み中...</div>';
+                
+                try {
+                    const response = await fetch('https://raw.githubusercontent.com/Seo-4d696b75/station_database/main/out/main/station.csv');
+                    const csvText = await response.text();
+                    
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            stationData = results.data;
+                            isStationDataLoaded = true;
+                            statusMessage.innerHTML = `<div style="color: green;">駅データを読み込みました（${stationData.length} 駅）</div>`;
+                        },
+                        error: function(error) {
+                            statusMessage.innerHTML = `<div class="error">駅データの読み込みに失敗しました: ${error}</div>`;
+                        }
+                    });
+                    
+                    return stationData;
+                } catch (error) {
+                    statusMessage.innerHTML = `<div class="error">駅データの取得に失敗しました: ${error.message}</div>`;
+                    return [];
+                }
+            }
+            
+            // 初期ロード時に駅データを取得
+            loadStationData();
+            
+            processButton.addEventListener('click', async function() {
+                const files = fileInput.files;
+                
+                if (files.length === 0) {
+                    statusMessage.innerHTML = '<div class="error">ファイルが選択されていません。</div>';
+                    return;
+                }
+                
+                // 駅データが読み込まれていなければ、ロードする
+                if (!isStationDataLoaded) {
+                    await loadStationData();
+                    if (!isStationDataLoaded) {
+                        statusMessage.innerHTML = '<div class="error">駅データが読み込まれていないため、処理を中止します。</div>';
+                        return;
+                    }
+                }
+                
+                // 処理開始前にギャラリーをクリアしてカウンターをリセット
+                gallery.innerHTML = '<div class="loading">画像を処理中です...</div>';
+                processedCount = 0;
+                withLocationCount = 0;
+                withStationCount = 0;
+                updateStats();
+                stats.style.display = 'block';
+                
+                // プログレスバーのセットアップ
+                progressContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                
+                // 処理の開始
+                setTimeout(() => {
+                    gallery.innerHTML = '';
+                    processFiles(files);
+                }, 100);
+            });
+            
+            function processFiles(files) {
+                const totalFiles = files.length;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // JPEGファイルのみを処理
+                    if (!file.type.match('image/jpeg')) {
+                        updateProgress(i + 1, totalFiles);
+                        continue;
+                    }
+                    
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const imageData = e.target.result;
+                        
+                        // EXIF情報を取得
+                        EXIF.getData(file, function() {
+                            processedCount++;
+                            
+                            // 画像カードを作成
+                            const card = document.createElement('div');
+                            card.className = 'image-card';
+                            
+                            // サムネイル画像を作成
+                            const img = document.createElement('img');
+                            img.src = imageData;
+                            img.className = 'thumbnail';
+                            card.appendChild(img);
+                            
+                            // 画像情報コンテナを作成
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'image-info';
+                            
+                            // ファイル名を表示
+                            const title = document.createElement('h3');
+                            title.textContent = file.name;
+                            title.title = file.name; // ホバー時にフルネームを表示
+                            infoDiv.appendChild(title);
+                            
+                            // 緯度と経度を取得
+                            const latitude = EXIF.getTag(this, "GPSLatitude");
+                            const latitudeRef = EXIF.getTag(this, "GPSLatitudeRef");
+                            const longitude = EXIF.getTag(this, "GPSLongitude");
+                            const longitudeRef = EXIF.getTag(this, "GPSLongitudeRef");
+                            
+                            if (latitude && longitude) {
+                                withLocationCount++;
+                                
+                                // 緯度と経度を度分秒から10進数に変換
+                                const latDec = convertDMSToDD(latitude[0], latitude[1], latitude[2], latitudeRef);
+                                const lonDec = convertDMSToDD(longitude[0], longitude[1], longitude[2], longitudeRef);
+                                
+                                // 位置情報の表示
+                                const locationInfo = document.createElement('p');
+                                locationInfo.textContent = `緯度: ${latDec.toFixed(6)}, 経度: ${lonDec.toFixed(6)}`;
+                                infoDiv.appendChild(locationInfo);
+                                
+                                // Google Mapsへのリンクを作成
+                                const mapLink = document.createElement('a');
+                                mapLink.href = `https://www.google.com/maps?q=${latDec},${lonDec}`;
+                                mapLink.className = 'map-link';
+                                mapLink.textContent = 'Google Mapsで表示';
+                                mapLink.target = '_blank';
+                                infoDiv.appendChild(mapLink);
+                                
+                                // 最寄り駅を検索
+                                const nearestStation = findNearestStation(latDec, lonDec);
+                                if (nearestStation) {
+                                    withStationCount++;
+                                    
+                                    // 駅情報の表示
+                                    const stationInfoDiv = document.createElement('div');
+                                    stationInfoDiv.className = 'station-info';
+                                    
+                                    const stationName = document.createElement('div');
+                                    stationName.className = 'station-name';
+                                    stationName.textContent = `最寄り駅: ${nearestStation.original_name}`;
+                                    stationInfoDiv.appendChild(stationName);
+                                    
+                                    const stationDetails = document.createElement('div');
+                                    stationDetails.className = 'station-details';
+                                    stationDetails.textContent = `読み方: ${nearestStation.name_kana}`;
+                                    stationInfoDiv.appendChild(stationDetails);
+                                    
+                                    const distanceInfo = document.createElement('div');
+                                    distanceInfo.className = 'distance-info';
+                                    distanceInfo.textContent = `距離: 約 ${nearestStation.distance.toFixed(2)} km`;
+                                    stationInfoDiv.appendChild(distanceInfo);
+                                    
+                                    infoDiv.appendChild(stationInfoDiv);
+                                }
+                            } else {
+                                // 位置情報がない場合
+                                const noLocation = document.createElement('p');
+                                noLocation.className = 'no-location';
+                                noLocation.textContent = '位置情報なし';
+                                infoDiv.appendChild(noLocation);
+                            }
+                            
+                            card.appendChild(infoDiv);
+                            gallery.appendChild(card);
+                            
+                            updateStats();
+                            updateProgress(processedCount, totalFiles);
+                        });
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            }
+            
+            // 度分秒から10進数への変換関数
+            function convertDMSToDD(degrees, minutes, seconds, direction) {
+                let dd = degrees + minutes / 60 + seconds / 3600;
+                
+                if (direction === "S" || direction === "W") {
+                    dd = dd * -1;
+                }
+                
+                return dd;
+            }
+            
+            // 2点間の距離を計算する関数（ヒュベニの公式）
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                // 地球の半径（km）
+                const R = 6371;
+                
+                // 緯度経度をラジアンに変換
+                const lat1Rad = lat1 * Math.PI / 180;
+                const lat2Rad = lat2 * Math.PI / 180;
+                const lon1Rad = lon1 * Math.PI / 180;
+                const lon2Rad = lon2 * Math.PI / 180;
+                
+                // 緯度差、経度差
+                const latDiff = lat2Rad - lat1Rad;
+                const lonDiff = lon2Rad - lon1Rad;
+                
+                // ヒュベニの公式
+                const a = Math.sin(latDiff/2) * Math.sin(latDiff/2) +
+                          Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                          Math.sin(lonDiff/2) * Math.sin(lonDiff/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                const distance = R * c;
+                
+                return distance;
+            }
+            
+            // 最寄り駅を見つける関数
+            function findNearestStation(lat, lon) {
+                if (!stationData || stationData.length === 0) return null;
+                
+                let nearestStation = null;
+                let minDistance = Infinity;
+                
+                for (const station of stationData) {
+                    // lat, lngがある場合のみ処理
+                    if (station.lat && station.lng) {
+                        const stationLat = parseFloat(station.lat);
+                        const stationLng = parseFloat(station.lng);
+                        
+                        // 無効な緯度経度は無視
+                        if (isNaN(stationLat) || isNaN(stationLng)) continue;
+                        
+                        const distance = calculateDistance(lat, lon, stationLat, stationLng);
+                        
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            nearestStation = {
+                                ...station,
+                                distance: distance
+                            };
+                        }
+                    }
+                }
+                
+                // 5km以内の駅のみを返す（必要に応じて調整）
+                if (nearestStation && nearestStation.distance <= 5) {
+                    return nearestStation;
+                }
+                
+                return null;
+            }
+            
+            // 統計情報を更新する関数
+            function updateStats() {
+                processedCountElement.textContent = processedCount;
+                withLocationCountElement.textContent = withLocationCount;
+                withStationCountElement.textContent = withStationCount;
+            }
+            
+            // プログレスバーを更新する関数
+            function updateProgress(current, total) {
+                const percentage = Math.round((current / total) * 100);
+                progressBar.style.width = `${percentage}%`;
+                
+                if (current >= total) {
+                    // 処理完了後にプログレスバーを非表示
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                    }, 1000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
