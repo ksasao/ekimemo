@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StaMap - 駅情報付き写真Viewer</title>
-    <link rel="icon" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzAiIGZpbGw9IiMzMTc2YmUiIC8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjgiIGZpbGw9IiM0ODk0ZGEiIC8+CiAgPHBhdGggZD0iTTMyIDE0Yy02IDAtMTEgNC41LTExIDEwYzAgNyAxMSAyMCAxMSAyMHMxMS0xMyAxMS0yMGMwLTUuNS01LTEwLTExLTEweiIgZmlsbD0iI2U3NGMzYyIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSI0IiBmaWxsPSJ3aGl0ZSIgLz4KICA8cmVjdCB4PSIxNCIgeT0iNDIiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iIzMzMzMzMyIgLz4KICA8cmVjdCB4PSIxNCIgeT0iNDkiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iIzMzMzMzMyIgLz4KICA8cmVjdCB4PSIxNyIgeT0iNDIiIHdpZHRoPSIyIiBoZWlnaHQ9IjEwIiByeD0iMC41IiBmaWxsPSIjNWQ0MDM3IiAvPgogIDxyZWN0IHg9IjI0IiB5PSI0MiIgd2lkdGg9IjIiIGhlaWdodD0iMTAiIHJ4PSIwLjUiIGZpbGw9IiM1ZDQwMzciIC8+CiAgPHJlY3QgeD0iMzEiIHk9IjQyIiB3aWR0aD0iMiIgaGVpZ2h0PSIxMCIgcng9IjAuNSIgZmlsbD0iIzVkNDAzNyIgLz4KICA8cmVjdCB4PSIzOCIgeT0iNDIiIHdpZHRoPSIyIiBoZWlnaHQ9IjEwIiByeD0iMC41IiBmaWxsPSIjNWQ0MDM3IiAvPgogIDxyZWN0IHg9IjQ1IiB5PSI0MiIgd2lkdGg9IjIiIGhlaWdodD0iMTAiIHJ4PSIwLjUiIGZpbGw9IiM1ZDQwMzciIC8+Cjwvc3ZnPg==" type="image/svg+xml">
+    <link rel="icon" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB2aWV3Qm94PSIwIDAgNjQgNjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzAiIGZpbGw9IiMzMTc2YmUiIC8+CiAgPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMjgiIGZpbGw9IiM0ODk0ZGEiIC8+CiAgPHBhdGggZD0iTTMyIDE0Yy02IDAtMTEgNC41LTExIDEwYzAgNyAxMSAyMCAxMSAyMHMxMS0xMyAxMS0yMGMwLTUuNS01LTEwLTExLTEweiIgZmlsbD0iI2U3NGMzYyIgLz4KICA8Y2lyY2xlIGN4PSIzMiIgY3k9IjI0IiByPSI0IiBmaWxsPSJ3aGl0ZSIgLz4KICA8cmVjdCB4PSIxNCIgeT0iNDIiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iIzMzMzMzMyIgLz4KICA8cmVjdCB4PSIxNCIgeT0iNDkiIHdpZHRoPSIzNiIgaGVpZ2h0PSIzIiByeD0iMSIgZmlsbD0iIzMzMzMzMyIgLz4KICA8cmVjdCB4PSIxNyIgeT0iNDIiIHdpZHRoPSIyIiBoZWlnaHQ9IjEwIiByeD0iMC41IiBmaWxsPSIjNWQ0MDM3IiAvPgogIDxyZWN0IHg9IjI0IiB5PSI0MiIgd2lkdGg9IjIiIGhlaWdodD0iMTAiIHJ4PSIwLjUiIGZpbGw9IiM1ZDQwMzciIC8+CiAgPHJlY3QgeD0iMzEiIHk9IjQyIiB3aWR0aD0iMiIgaGVpZHN0PSIxMCIgcng9IjAuNSIgZmlsbD0iIzVkNDAzNyIgLz4KICA8cmVjdCB4PSIzOCIgeT0iNDIiIHdpZHRoPSIyIiBoZWlnaHQ9IjEwIiByeD0iMC41IiBmaWxsPSIjNWQ0MDM3IiAvPgogIDxyZWN0IHg9IjQ1IiB5PSI0MiIgd2lkdGg9IjIiIGhlaWdodD0iMTAiIHJ4PSIwLjUiIGZpbGw9IiM1ZDQwMzciIC8+Cjwvc3ZnPg==" type="image/svg+xml">
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -174,7 +174,7 @@
             background-color: #e0e0e0;
             border-radius: 5px;
             margin-top: 15px;
-            display: none;
+            display: none; 
         }
         .progress-bar {
             height: 10px;
@@ -236,7 +236,6 @@
             let stationData = [];
             let isStationDataLoaded = false;
             
-            // 駅データの読み込み
             async function loadStationData() {
                 if (isStationDataLoaded) return Promise.resolve(stationData);
                 
@@ -246,29 +245,30 @@
                     const response = await fetch('https://raw.githubusercontent.com/Seo-4d696b75/station_database/main/out/main/station.csv');
                     const csvText = await response.text();
                     
-                    Papa.parse(csvText, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: function(results) {
-                            stationData = results.data;
-                            isStationDataLoaded = true;
-                            statusMessage.innerHTML = `<div style="color: green;">駅データを読み込みました（${stationData.length} 駅）</div>`;
-                        },
-                        error: function(error) {
-                            statusMessage.innerHTML = `<div class="error">駅データの読み込みに失敗しました: ${error}</div>`;
-                        }
+                    return new Promise((resolve, reject) => { // Papa.parseをPromiseでラップ
+                        Papa.parse(csvText, {
+                            header: true,
+                            skipEmptyLines: true,
+                            complete: function(results) {
+                                stationData = results.data;
+                                isStationDataLoaded = true;
+                                statusMessage.innerHTML = `<div style="color: green;">駅データを読み込みました（${stationData.length} 駅）</div>`;
+                                resolve(stationData);
+                            },
+                            error: function(error) {
+                                statusMessage.innerHTML = `<div class="error">駅データの読み込みに失敗しました: ${error}</div>`;
+                                reject(error);
+                            }
+                        });
                     });
-                    
-                    return stationData;
                 } catch (error) {
                     statusMessage.innerHTML = `<div class="error">駅データの取得に失敗しました: ${error.message}</div>`;
-                    return [];
+                    return Promise.reject(error);
                 }
             }
             
-            // 初期ロード時に駅データを取得
-            loadStationData();
-            
+            loadStationData().catch(err => console.error("初期駅データロード失敗:", err)); // 初期ロード
+
             processButton.addEventListener('click', async function() {
                 const files = fileInput.files;
                 
@@ -277,16 +277,20 @@
                     return;
                 }
                 
-                // 駅データが読み込まれていなければ、ロードする
                 if (!isStationDataLoaded) {
-                    await loadStationData();
-                    if (!isStationDataLoaded) {
-                        statusMessage.innerHTML = '<div class="error">駅データが読み込まれていないため、処理を中止します。</div>';
+                    statusMessage.innerHTML = '<div class="loading">駅データを読み込み中です。完了後に再度お試しください。</div>';
+                    try {
+                        await loadStationData(); // 再度ロードを試みる
+                        if (!isStationDataLoaded) { // それでもダメなら中止
+                             statusMessage.innerHTML = '<div class="error">駅データが読み込まれていないため、処理を中止します。</div>';
+                             return;
+                        }
+                    } catch (error) {
+                        statusMessage.innerHTML = '<div class="error">駅データの読み込みに失敗したため、処理を開始できません。</div>';
                         return;
                     }
                 }
                 
-                // 処理開始前にギャラリーをクリアしてカウンターをリセット
                 gallery.innerHTML = '<div class="loading">画像を処理中です...</div>';
                 processedCount = 0;
                 withLocationCount = 0;
@@ -294,26 +298,54 @@
                 updateStats();
                 stats.style.display = 'block';
                 
-                // プログレスバーのセットアップ
                 progressContainer.style.display = 'block';
                 progressBar.style.width = '0%';
+                statusMessage.innerHTML = ''; // 前のメッセージをクリア
                 
-                // 処理の開始
-                setTimeout(() => {
-                    gallery.innerHTML = '';
+                setTimeout(() => { // UI描画のための短い遅延
                     processFiles(files);
-                }, 100);
+                }, 50);
             });
             
             function processFiles(files) {
                 const totalFiles = files.length;
-                
+                let filesEffectivelyProcessed = 0; // プログレスバー更新用のカウンター
+
+                gallery.innerHTML = ''; // 処理開始時にギャラリーをクリア
+
+                if (totalFiles === 0) {
+                    updateProgress(0, 0);
+                    statusMessage.innerHTML = '処理するファイルがありません。';
+                    return;
+                }
+
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     
-                    // JPEGファイルのみを処理
                     if (!file.type.match('image/jpeg')) {
-                        updateProgress(i + 1, totalFiles);
+                        filesEffectivelyProcessed++;
+                        // processedCount++; // 非JPEGは「処理された画像」の統計には含めない場合
+                        updateStats(); // 統計に影響させないなら呼ばなくてもよい
+                        updateProgress(filesEffectivelyProcessed, totalFiles);
+
+                        const skippedCard = document.createElement('div');
+                        skippedCard.className = 'image-card';
+                        const skippedInfo = document.createElement('div');
+                        skippedInfo.className = 'image-info';
+                        const skippedTitle = document.createElement('h3');
+                        skippedTitle.textContent = file.name;
+                        skippedTitle.title = file.name;
+                        skippedInfo.appendChild(skippedTitle);
+                        const skippedMessage = document.createElement('p');
+                        skippedMessage.className = 'no-location';
+                        skippedMessage.textContent = 'JPEGファイルではないためスキップされました。';
+                        skippedInfo.appendChild(skippedMessage);
+                        skippedCard.appendChild(skippedInfo);
+                        gallery.appendChild(skippedCard);
+
+                        if (filesEffectivelyProcessed === totalFiles) {
+                            statusMessage.innerHTML = `<div style="color: green;">全てのファイルの処理が完了しました。</div>`;
+                        }
                         continue;
                     }
                     
@@ -322,62 +354,52 @@
                     reader.onload = function(e) {
                         const imageData = e.target.result;
                         
-                        // EXIF情報を取得
                         EXIF.getData(file, function() {
-                            processedCount++;
+                            filesEffectivelyProcessed++;
+                            processedCount++; // JPEGファイルは処理された画像としてカウント
                             
-                            // 画像カードを作成
                             const card = document.createElement('div');
                             card.className = 'image-card';
                             
-                            // サムネイル画像を作成
                             const img = document.createElement('img');
                             img.src = imageData;
                             img.className = 'thumbnail';
                             card.appendChild(img);
                             
-                            // 画像情報コンテナを作成
                             const infoDiv = document.createElement('div');
                             infoDiv.className = 'image-info';
                             
-                            // ファイル名を表示
-                            const title = document.createElement('h3');
-                            title.textContent = file.name;
-                            title.title = file.name; // ホバー時にフルネームを表示
-                            infoDiv.appendChild(title);
+                            const titleElement = document.createElement('h3'); // 変数名変更
+                            titleElement.textContent = file.name;
+                            titleElement.title = file.name; 
+                            infoDiv.appendChild(titleElement);
                             
-                            // 緯度と経度を取得
                             const latitude = EXIF.getTag(this, "GPSLatitude");
                             const latitudeRef = EXIF.getTag(this, "GPSLatitudeRef");
                             const longitude = EXIF.getTag(this, "GPSLongitude");
                             const longitudeRef = EXIF.getTag(this, "GPSLongitudeRef");
                             
-                            if (latitude && longitude) {
+                            if (latitude && longitude && latitude.length === 3 && longitude.length === 3) { // データの妥当性も少しチェック
                                 withLocationCount++;
                                 
-                                // 緯度と経度を度分秒から10進数に変換
-                                const latDec = convertDMSToDD(latitude[0], latitude[1], latitude[2], latitudeRef);
-                                const lonDec = convertDMSToDD(longitude[0], longitude[1], longitude[2], longitudeRef);
+                                const latDec = convertDMSToDD(latitude[0].valueOf(), latitude[1].valueOf(), latitude[2].valueOf(), latitudeRef);
+                                const lonDec = convertDMSToDD(longitude[0].valueOf(), longitude[1].valueOf(), longitude[2].valueOf(), longitudeRef);
                                 
-                                // 位置情報の表示
                                 const locationInfo = document.createElement('p');
                                 locationInfo.textContent = `緯度: ${latDec.toFixed(6)}, 経度: ${lonDec.toFixed(6)}`;
                                 infoDiv.appendChild(locationInfo);
                                 
-                                // Google Mapsへのリンクを作成
                                 const mapLink = document.createElement('a');
-                                mapLink.href = `https://www.google.com/maps?q=${latDec},${lonDec}`;
+                                mapLink.href = `https://maps.google.com/?q=${latDec},${lonDec}`; // 修正されたURL
                                 mapLink.className = 'map-link';
                                 mapLink.textContent = 'Google Mapsで表示';
                                 mapLink.target = '_blank';
                                 infoDiv.appendChild(mapLink);
                                 
-                                // 最寄り駅を検索
                                 const nearestStation = findNearestStation(latDec, lonDec);
                                 if (nearestStation) {
                                     withStationCount++;
                                     
-                                    // 駅情報の表示
                                     const stationInfoDiv = document.createElement('div');
                                     stationInfoDiv.className = 'station-info';
                                     
@@ -399,7 +421,6 @@
                                     infoDiv.appendChild(stationInfoDiv);
                                 }
                             } else {
-                                // 位置情報がない場合
                                 const noLocation = document.createElement('p');
                                 noLocation.className = 'no-location';
                                 noLocation.textContent = '位置情報なし';
@@ -410,51 +431,68 @@
                             gallery.appendChild(card);
                             
                             updateStats();
-                            updateProgress(processedCount, totalFiles);
+                            updateProgress(filesEffectivelyProcessed, totalFiles);
+
+                            if (filesEffectivelyProcessed === totalFiles) {
+                                statusMessage.innerHTML = `<div style="color: green;">全てのファイルの処理が完了しました。</div>`;
+                            }
                         });
+                    };
+
+                    reader.onerror = function() {
+                        filesEffectivelyProcessed++;
+                        // processedCount++; // エラーの場合は統計に含めないことが多い
+                        updateStats();
+                        updateProgress(filesEffectivelyProcessed, totalFiles);
+                        
+                        console.error("ファイルの読み込み中にエラーが発生しました:", file.name);
+                        const errorCard = document.createElement('div');
+                        errorCard.className = 'image-card';
+                        const errorInfo = document.createElement('div');
+                        errorInfo.className = 'image-info';
+                        const errorTitle = document.createElement('h3');
+                        errorTitle.textContent = file.name;
+                        errorTitle.title = file.name;
+                        errorInfo.appendChild(errorTitle);
+                        const errorMessage = document.createElement('p');
+                        errorMessage.className = 'error'; // CSSクラスを流用
+                        errorMessage.textContent = 'ファイルの読み込みに失敗しました。';
+                        errorInfo.appendChild(errorMessage);
+                        errorCard.appendChild(errorInfo);
+                        gallery.appendChild(errorCard);
+
+                        if (filesEffectivelyProcessed === totalFiles) {
+                            statusMessage.innerHTML = `<div style="color: green;">全てのファイルの処理が完了しました。</div>`;
+                        }
                     };
                     
                     reader.readAsDataURL(file);
                 }
             }
             
-            // 度分秒から10進数への変換関数
             function convertDMSToDD(degrees, minutes, seconds, direction) {
-                let dd = degrees + minutes / 60 + seconds / 3600;
-                
+                let dd = parseFloat(degrees) + parseFloat(minutes) / 60 + parseFloat(seconds) / 3600;
                 if (direction === "S" || direction === "W") {
                     dd = dd * -1;
                 }
-                
                 return dd;
             }
             
-            // 2点間の距離を計算する関数（ヒュベニの公式）
             function calculateDistance(lat1, lon1, lat2, lon2) {
-                // 地球の半径（km）
-                const R = 6371;
-                
-                // 緯度経度をラジアンに変換
+                const R = 6371; 
                 const lat1Rad = lat1 * Math.PI / 180;
                 const lat2Rad = lat2 * Math.PI / 180;
                 const lon1Rad = lon1 * Math.PI / 180;
                 const lon2Rad = lon2 * Math.PI / 180;
-                
-                // 緯度差、経度差
                 const latDiff = lat2Rad - lat1Rad;
                 const lonDiff = lon2Rad - lon1Rad;
-                
-                // ヒュベニの公式
                 const a = Math.sin(latDiff/2) * Math.sin(latDiff/2) +
                           Math.cos(lat1Rad) * Math.cos(lat2Rad) *
                           Math.sin(lonDiff/2) * Math.sin(lonDiff/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                const distance = R * c;
-                
-                return distance;
+                return R * c;
             }
             
-            // 最寄り駅を見つける関数
             function findNearestStation(lat, lon) {
                 if (!stationData || stationData.length === 0) return null;
                 
@@ -462,12 +500,9 @@
                 let minDistance = Infinity;
                 
                 for (const station of stationData) {
-                    // lat, lngがある場合のみ処理
                     if (station.lat && station.lng) {
                         const stationLat = parseFloat(station.lat);
                         const stationLng = parseFloat(station.lng);
-                        
-                        // 無効な緯度経度は無視
                         if (isNaN(stationLat) || isNaN(stationLng)) continue;
                         
                         const distance = calculateDistance(lat, lon, stationLat, stationLng);
@@ -482,31 +517,31 @@
                     }
                 }
                 
-                // 50km以内の駅のみを返す（必要に応じて調整）
-                if (nearestStation && nearestStation.distance <= 50) {
+                if (nearestStation && nearestStation.distance <= 50) { // 50km以内
                     return nearestStation;
                 }
-                
                 return null;
             }
             
-            // 統計情報を更新する関数
             function updateStats() {
                 processedCountElement.textContent = processedCount;
                 withLocationCountElement.textContent = withLocationCount;
                 withStationCountElement.textContent = withStationCount;
             }
             
-            // プログレスバーを更新する関数
             function updateProgress(current, total) {
+                if (total === 0) {
+                    progressBar.style.width = '0%';
+                    progressContainer.style.display = 'none';
+                    return;
+                }
                 const percentage = Math.round((current / total) * 100);
                 progressBar.style.width = `${percentage}%`;
                 
                 if (current >= total) {
-                    // 処理完了後にプログレスバーを非表示
                     setTimeout(() => {
                         progressContainer.style.display = 'none';
-                    }, 1000);
+                    }, 1000); // 100%表示後、少し遅れて非表示
                 }
             }
         });
