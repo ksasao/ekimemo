@@ -146,7 +146,7 @@
 
     <!-- マーカーデータ -->
     <script>
-        var markerData = [{'name': '上野', 'name_kana': 'うえの', 'lat': 35.71379, 'lng': 139.777043, 'radius': 0, 'pt': 1}, {'name': '上野動物園', 'name_kana': 'うえのどうぶつえん', 'lat': 35.7160153, 'lng': 139.772882, 'radius': 200, 'pt': 1}]; // REPLACE_MARKER_DATA
+        var markerData = [ {'lat': 39.007863, 'lng': 141.627136, 'name': '奇跡の一本松', 'name_kana': 'きせきのいっぽんまつ', 'radius': 0, 'pt': 1, 'coordinates': [[[141.649285, 38.986696], [141.62276, 38.997037], [141.618003, 39.014407], [141.632447, 39.010124], [141.635834, 39.008718], [141.649953, 38.986759], [141.649285, 38.986696]]]}]; // REPLACE_MARKER_DATA
     </script>
     
     <!-- メインスクリプト -->
@@ -162,6 +162,7 @@
         let isFirstLocation = true;
         let userInteracted = false;
         const circles = [];
+        const polygons = []; // Voronoiポリゴンを保存する配列
         
         // 定数
         const PREFIX = '20250428_';
@@ -203,8 +204,8 @@
                 attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
             
-            map.on('zoomend', updateCircleVisibility);
-            map.on('moveend', updateCircleVisibility);
+            map.on('zoomend', updateVisibility);
+            map.on('moveend', updateVisibility);
             map.on('locationfound', onLocationFound);
             map.on('locationerror', onLocationError);
             
@@ -212,7 +213,7 @@
             map.on('dragstart', onUserInteraction);
             map.on('zoomstart', onUserInteraction);
             map.on('touchstart', function(e) {
-                // タッチ操作が2本指以上の場合（ピンチイン・アウト）
+                // タッチ操作が2本指以上の場合（ピンチイン・ピンチアウト）
                 if (e.originalEvent.touches && e.originalEvent.touches.length > 1) {
                     onUserInteraction();
                 }
@@ -249,7 +250,7 @@
             
             updateMarkerCount();
             
-            // マーカーとサークルの作成
+            // マーカーとサークル、ポリゴンの作成
             markerData.forEach(function(data) {
                 createMarker(data);
             });
@@ -271,6 +272,11 @@
             // 半径を指定した円を描画
             if(data.radius > 0) {
                 createCircles(loc, data.radius);
+            }
+            
+            // Voronoiポリゴンを作成
+            if(data.coordinates && data.coordinates.length > 0) {
+                createVoronoiPolygon(data);
             }
             
             // イベントリスナーの設定
@@ -299,6 +305,38 @@
                 radius: radius
             });
             circles.push(outerCircle);
+        }
+        
+        /**
+         * Voronoiポリゴンを作成
+         */
+        function createVoronoiPolygon(data) {
+            if (!data.coordinates || data.coordinates.length === 0) {
+                return;
+            }
+            
+            // coordinates配列の最初の要素（外郭線）を使用
+            const coords = data.coordinates[0];
+            
+            // [lng, lat] を [lat, lng] に変換
+            const latLngs = coords.map(coord => [coord[1], coord[0]]);
+            
+            // ポリゴンを作成
+            const polygon = L.polygon(latLngs, {
+                color: '#8A2BE2',        // 紫色の境界線
+                weight: 2,               // 境界線の太さ
+                opacity: 0.8,            // 境界線の不透明度
+                fillColor: '#DDA0DD',    // 薄紫色の塗りつぶし
+                fillOpacity: 0.2         // 塗りつぶしの不透明度
+            });
+            
+            // ポリゴンにポップアップを追加（マーカーと同じ内容）
+            const searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
+            const nameHtml = createPopupContent(data, searchKeyword);
+            polygon.bindPopup(nameHtml, {maxWidth: 300});
+            
+            // ポリゴン配列に追加
+            polygons.push(polygon);
         }
         
         /**
@@ -386,17 +424,33 @@
         }
         
         /**
-         * ズームレベルに応じて円の表示を更新
+         * ズームレベルに応じて円とポリゴンの表示を更新
          */
-        function updateCircleVisibility() {
+        function updateVisibility() {
+            const currentZoom = map.getZoom();
+            
+            // 円の表示/非表示
             circles.forEach(function(circle) {
-                if (map.getZoom() > ZOOM_THRESHOLD) {
+                if (currentZoom > ZOOM_THRESHOLD) {
                     if (!map.hasLayer(circle)) {
                         circle.addTo(map);
                     }
                 } else {
                     if (map.hasLayer(circle)) {
                         map.removeLayer(circle);
+                    }
+                }
+            });
+            
+            // ポリゴンの表示/非表示
+            polygons.forEach(function(polygon) {
+                if (currentZoom > ZOOM_THRESHOLD) {
+                    if (!map.hasLayer(polygon)) {
+                        polygon.addTo(map);
+                    }
+                } else {
+                    if (map.hasLayer(polygon)) {
+                        map.removeLayer(polygon);
                     }
                 }
             });
