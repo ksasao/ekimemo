@@ -16,7 +16,6 @@ for station in stations:
     if any(char in station['name'] for char in filter_str):
         # voronoi.geometry.coordinatesから座標データを取得
         coordinates = station.get('voronoi', {}).get('geometry', {}).get('coordinates', [])
-        
         marker_data.append({
             'lat': station['lat'],
             'lng': station['lng'],
