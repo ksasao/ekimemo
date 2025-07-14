@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>駅メモ！スポット 2025/05/22 15:00 - 2025/11/03 23:59 - 東海ななと巡る！橙色の在来線旅</title>
+    
+    <!-- 外部ライブラリ -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    
+    <!-- iOSデスクトップアイコン用 -->
+    <link rel="apple-touch-icon" href="icon_180.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="東海ななと巡る！橙色の在来線旅">
+
+    <!-- Androidデスクトップアイコン用 -->
+    <link rel="icon" type="image/png" href="icon_32.png" sizes="32x32">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+
+    <!-- スタイルシート -->
+    <style>
+        /* ベーススタイル */
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Leaflet スタイルのカスタマイズ */
+        .leaflet-container { 
+            font-size: 1rem; 
+        }
+        
+        .leaflet-marker-icon {
+            touch-action: none;
+        }
+        
+        .leaflet-marker-icon:active {
+            outline: none;
+            -webkit-tap-highlight-color: rgba(0,0,0,0);
+        }
+        
+        /* マーカーアニメーション */
+        .blinking {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        
+        /* UI要素 */
+        #marker-count {
+            position: fixed;
+            bottom: 3px;
+            left: 10px;
+            padding: 5px;
+            font-size: 24px;
+            font-weight: bold; 
+            color: white;
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9);
+            z-index: 1001;
+        }
+        
+        #attribution {
+            position: fixed;
+            bottom: 0px;
+            left: 0px;
+            background-color: white;
+            padding: 0px;
+            border: 0px solid white;
+            font-size: 10px;
+            z-index: 1000;
+        }
+        
+        #location-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(66, 133, 244, 0.7);
+            border: none;
+            outline: none;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+        }
+        
+        #location-button:hover {
+            background-color: rgba(51, 103, 214, 0.8);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+        }
+        
+        /* 追跡モード用アイコン */
+        #location-button.following {
+            background-color: rgba(0, 128, 0, 0.7);
+        }
+        
+        #location-button.following:hover {
+            background-color: rgba(0, 100, 0, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- UI要素 -->
+    <div id="attribution">
+        駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank">駅データ</a> を利用しています
+    </div>
+    
+    <div id="marker-count">
+        <span id="red-markers-count" style="font-size: 48px;">0</span>/<span id="total-markers-count">0</span>
+    </div>
+    
+    <div id="map"></div>
+    
+    <button id="location-button">
+        <i class="fas fa-crosshairs" style="color: white; font-size: 24px;"></i>
+    </button>
+
+    <!-- 必要なライブラリをロード -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- マーカーデータ -->
+    <script>
+        var markerData = [{"name": "東京", "name_kana": "とうきょう", "lat": 35.681391, "lng": 139.766103, "radius": 0, "pt": 1, "coordinates": [[139.766725, 35.677891], [139.769904, 35.680711], [139.769608, 35.683913], [139.763811, 35.684021], [139.76422, 35.678699], [139.766421, 35.67785], [139.766725, 35.677891]]}, {"name": "品川", "name_kana": "しながわ", "lat": 35.62876, "lng": 139.738999, "radius": 0, "pt": 1, "coordinates": [[139.733042, 35.625425], [139.744812, 35.625783], [139.747046, 35.630241], [139.73566, 35.633222], [139.733042, 35.625425]]}, {"name": "小田原", "name_kana": "おだわら", "lat": 35.256225, "lng": 139.155772, "radius": 0, "pt": 1, "coordinates": [[139.202833, 35.215034], [139.151238, 35.263276], [139.149383, 35.263513], [139.138184, 35.262575], [139.13824, 35.262426], [139.159896, 35.241657], [139.202833, 35.215034]]}, {"name": "熱海", "name_kana": "あたみ", "lat": 35.103573, "lng": 139.077679, "radius": 0, "pt": 1, "coordinates": [[139.053815, 35.145601], [139.080292, 35.079523], [139.099703, 35.074761], [139.155868, 35.078098], [139.136008, 35.098407], [139.053815, 35.145601]]}, {"name": "新横浜", "name_kana": "しんよこはま", "lat": 35.506824, "lng": 139.617348, "radius": 0, "pt": 1, "coordinates": [[139.607983, 35.501673], [139.60887, 35.510786], [139.622078, 35.515593], [139.625085, 35.502435], [139.624478, 35.50124], [139.607983, 35.501673]]}, {"name": "名古屋", "name_kana": "なごや", "lat": 35.170694, "lng": 136.881637, "radius": 0, "pt": 1, "coordinates": [[136.885066, 35.173783], [136.884327, 35.177775], [136.876328, 35.172061], [136.878345, 35.166492], [136.879908, 35.166183], [136.880203, 35.166189], [136.883645, 35.171269], [136.885066, 35.173783]]}, {"name": "多治見", "name_kana": "たじみ", "lat": 35.334774, "lng": 137.120294, "radius": 0, "pt": 1, "coordinates": [[137.098908, 35.325982], [137.137881, 35.380216], [137.179468, 35.277161], [137.098908, 35.325982]]}, {"name": "土岐市", "name_kana": "ときし", "lat": 35.359708, "lng": 137.182082, "radius": 0, "pt": 1, "coordinates": [[137.137726, 35.381408], [137.137881, 35.380216], [137.179468, 35.277161], [137.19178, 35.259573], [137.221934, 35.240575], [137.233667, 35.24041], [137.207484, 35.435763], [137.137726, 35.381408]]}, {"name": "瑞浪", "name_kana": "みずなみ", "lat": 35.369081, "lng": 137.252017, "radius": 0, "pt": 1, "coordinates": [[137.318681, 35.339437], [137.220732, 35.462959], [137.207484, 35.435763], [137.233667, 35.24041], [137.269541, 35.229744], [137.313495, 35.324301], [137.318681, 35.339437]]}, {"name": "恵那", "name_kana": "えな", "lat": 35.455063, "lng": 137.407764, "radius": 0, "pt": 1, "coordinates": [[137.347939, 35.609846], [137.335756, 35.587992], [137.393097, 35.408539], [137.396097, 35.409531], [137.402276, 35.412237], [137.426796, 35.471164], [137.347939, 35.609846]]}, {"name": "中津川", "name_kana": "なかつがわ", "lat": 35.50036, "lng": 137.502867, "radius": 0, "pt": 1, "coordinates": [[137.48184, 35.550719], [137.446797, 35.564112], [137.490539, 35.455134], [137.619251, 35.389686], [137.634741, 35.382925], [137.634741, 35.382927], [137.48184, 35.550719]]}, {"name": "南木曽", "name_kana": "なぎそ", "lat": 35.598896, "lng": 137.608672, "radius": 0, "pt": 1, "coordinates": [[137.688844, 35.607675], [137.572339, 35.629956], [137.587931, 35.542205], [137.665375, 35.459661], [137.670711, 35.467225], [137.722057, 35.586117], [137.688844, 35.607675]]}, {"name": "上松", "name_kana": "あげまつ", "lat": 35.784068, "lng": 137.693283, "radius": 0, "pt": 1, "coordinates": [[137.742539, 35.813747], [137.497986, 35.81435], [137.620672, 35.75122], [137.658325, 35.740233], [137.659495, 35.740254], [137.783246, 35.791215], [137.742539, 35.813747]]}, {"name": "木曽福島", "name_kana": "きそふくしま", "lat": 35.843669, "lng": 137.69343, "radius": 0, "pt": 1, "coordinates": [[137.466571, 35.824896], [137.464251, 35.85236], [137.46577, 35.858551], [137.552885, 36.082506], [137.642484, 35.988293], [137.742539, 35.813747], [137.497986, 35.81435], [137.466571, 35.824896]]}, {"name": "豊橋", "name_kana": "とよはし", "lat": 34.762734, "lng": 137.382128, "radius": 0, "pt": 1, "coordinates": [[137.382946, 34.763029], [137.376755, 34.768458], [137.33972, 34.745438], [137.344297, 34.74538], [137.371877, 34.75013], [137.377528, 34.752558], [137.379713, 34.754303], [137.382946, 34.763029]]}, {"name": "米原", "name_kana": "まいばら", "lat": 35.314657, "lng": 136.289992, "radius": 0, "pt": 1, "coordinates": [[136.242447, 35.314922], [136.235158, 35.319498], [136.315927, 35.328098], [136.323358, 35.296594], [136.242447, 35.314922]]}, {"name": "三島", "name_kana": "みしま", "lat": 35.126253, "lng": 138.911133, "radius": 0, "pt": 1, "coordinates": [[138.950682, 35.150463], [138.928139, 35.149544], [138.904342, 35.136444], [138.902513, 35.122677], [138.91697, 35.12282], [138.939731, 35.139328], [138.950505, 35.149858], [138.950682, 35.150463]]}, {"name": "静岡", "name_kana": "しずおか", "lat": 34.971629, "lng": 138.388579, "radius": 0, "pt": 1, "coordinates": [[138.395174, 34.971816], [138.389965, 34.974267], [138.363102, 34.966863], [138.423498, 34.918516], [138.427919, 34.915949], [138.39816, 34.968638], [138.395174, 34.971816]]}, {"name": "掛川", "name_kana": "かけがわ", "lat": 34.769463, "lng": 138.014937, "radius": 0, "pt": 1, "coordinates": [[138.03427, 34.618527], [138.004275, 34.711398], [138.009699, 34.808536], [138.012324, 34.829553], [138.028283, 34.84907], [138.048904, 34.833308], [138.05287, 34.828182], [138.056147, 34.823579], [138.056541, 34.822971], [138.03427, 34.618527]]}, {"name": "浜松", "name_kana": "はままつ", "lat": 34.703866, "lng": 137.734759, "radius": 0, "pt": 1, "coordinates": [[137.787018, 34.608726], [137.813247, 34.336779], [137.815309, 34.298121], [137.733255, 34.705382], [137.738768, 34.708304], [137.744597, 34.709582], [137.757601, 34.708374], [137.787018, 34.608726]]}, {"name": "三河安城", "name_kana": "みかわあんじょう", "lat": 34.96968, "lng": 137.060918, "radius": 0, "pt": 1, "coordinates": [[137.068833, 34.98448], [137.057086, 34.984491], [137.034506, 34.933685], [137.035853, 34.931227], [137.042776, 34.931233], [137.053915, 34.934097], [137.057808, 34.936768], [137.066704, 34.944978], [137.076997, 34.972842], [137.068833, 34.98448]]}, {"name": "京都", "name_kana": "きょうと", "lat": 34.985465, "lng": 135.757748, "radius": 0, "pt": 1, "coordinates": [[135.761906, 34.989727], [135.751517, 34.991785], [135.750463, 34.987145], [135.756369, 34.981564], [135.763899, 34.983817], [135.764023, 34.984183], [135.761906, 34.989727]]}, {"name": "新大阪", "name_kana": "しんおおさか", "lat": 34.734136, "lng": 135.501852, "radius": 0, "pt": 1, "coordinates": [[135.500436, 34.737721], [135.492319, 34.733782], [135.502356, 34.729433], [135.504617, 34.728807], [135.506967, 34.735151], [135.500436, 34.737721]]}, {"name": "新富士(静岡)", "name_kana": "しんふじ", "lat": 35.142, "lng": 138.6633, "radius": 0, "pt": 1, "coordinates": [[138.641425, 35.116718], [138.641235, 35.12637], [138.669127, 35.161834], [138.67218, 35.157539], [138.683227, 35.138788], [138.689834, 34.997467], [138.641425, 35.116718]]}, {"name": "岐阜羽島", "name_kana": "ぎふはしま", "lat": 35.3158, "lng": 136.6855, "radius": 0, "pt": 1, "coordinates": [[136.689429, 35.326777], [136.666203, 35.250394], [136.643337, 35.270814], [136.641681, 35.285582], [136.641496, 35.30855], [136.643878, 35.327431], [136.645476, 35.332128], [136.678183, 35.353459], [136.689429, 35.326777]]}];
+    </script>
+    
+    <!-- メインスクリプト -->
+    <script>
+        // グローバル変数
+        let map;
+        let redMarkerCount = 0;
+        let totalMarkerCount = markerData.length;
+        let locationMarker = null;
+        let radiusCircle = null;
+        let isTracking = false;
+        let isFollowing = false;
+        let isFirstLocation = true;
+        let userInteracted = false;
+        const circles = [];
+        const polygons = []; // Voronoiポリゴンを保存する配列
+        
+        // 定数
+        const PREFIX = '20250522_';
+        const ZOOM_THRESHOLD = 12;
+        const DEFAULT_CENTER = [34.6510957,135.5084344];
+        const DEFAULT_ZOOM = 5;
+        const INITIAL_LOCATION_ZOOM = 16; // 初回の位置表示時のズームレベル
+        
+        // ドキュメント読み込み完了時の処理
+        document.addEventListener('DOMContentLoaded', function() {
+            initApp();
+        });
+        
+        /**
+         * アプリケーションの初期化
+         */
+        function initApp() {
+            // マップの初期化
+            initMap();
+            
+            // マーカーの初期化
+            initMarkers();
+            
+            // 位置追跡ボタンの設定
+            setupLocationTracking();
+        }
+        
+        /**
+         * マップを初期化する
+         */
+        function initMap() {
+            map = L.map('map', {
+                zoomSnap: 0.1,
+                zoomDelta: 0.1,
+                wheelPxPerZoomLevel: 120
+            }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+            
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            map.on('zoomend', updateVisibility);
+            map.on('moveend', updateVisibility);
+            map.on('locationfound', onLocationFound);
+            map.on('locationerror', onLocationError);
+            
+            // ユーザーの操作を検知するイベントリスナー
+            map.on('dragstart', onUserInteraction);
+            map.on('zoomstart', onUserInteraction);
+            map.on('touchstart', function(e) {
+                // タッチ操作が2本指以上の場合（ピンチイン・ピンチアウト）
+                if (e.originalEvent.touches && e.originalEvent.touches.length > 1) {
+                    onUserInteraction();
+                }
+            });
+        }
+        
+        /**
+         * ユーザーの地図操作を検知したときの処理
+         */
+        function onUserInteraction() {
+            if (isFollowing) {
+                console.log("ユーザーによる地図操作を検知しました。追跡モードを終了します。");
+                userInteracted = true;
+                
+                // 追跡モードを終了（位置情報の取得は継続）
+                isFollowing = false;
+                
+                // ボタンの見た目を更新
+                updateLocationButtonAppearance();
+            }
+        }
+        
+        /**
+         * マーカーを初期化する
+         */
+        function initMarkers() {
+            // 既存のredマーカーのカウント
+            markerData.forEach(function(data) {
+                const key = getStorageKey(data);
+                if (localStorage.getItem(key) === 'red') {
+                    redMarkerCount++;
+                }
+            });
+            
+            updateMarkerCount();
+            
+            // マーカーとサークル、ポリゴンの作成
+            markerData.forEach(function(data) {
+                createMarker(data);
+            });
+        }
+        
+        /**
+         * 単一マーカーを作成する
+         */
+        function createMarker(data) {
+            const key = getStorageKey(data);
+            const searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
+            const nameHtml = createPopupContent(data, searchKeyword);
+            
+            const color = localStorage.getItem(key) === 'red' ? 'red' : 'blue';
+            const loc = [data.lat, data.lng];
+            const marker = L.marker(loc, { icon: createMarkerIcon(color) }).addTo(map)
+                .bindPopup(nameHtml, {maxWidth: 300});
+            
+            // 半径を指定した円を描画
+            if(data.radius > 0) {
+                createCircles(loc, data.radius);
+            }
+            
+            // Voronoiポリゴンを作成
+            if(data.coordinates && data.coordinates.length > 0) {
+                createVoronoiPolygon(data);
+            }
+            
+            // イベントリスナーの設定
+            setupMarkerEvents(marker, key);
+        }
+
+        /**
+         * 円を作成（半径表示用）
+         */
+         function createCircles(location, radius) {
+            if(radius < 50){ // 半径が小さいときは未確定とみなし 赤50m, 緑200mの円を描画
+                const innerCircle = L.circle(location, {
+                    color: 'red',
+                    fillColor: '#f03',
+                    fillOpacity: 0.15,
+                    radius: 50
+                });
+                circles.push(innerCircle);
+                radius = 200; // 外側の円(緑)は200mとする
+            }
+            
+            const outerCircle = L.circle(location, {
+                color: 'green',
+                fillColor: '#3f0',
+                fillOpacity: 0.15,
+                radius: radius
+            });
+            circles.push(outerCircle);
+        }
+        
+        /**
+         * Voronoiポリゴンを作成
+         */
+        function createVoronoiPolygon(data) {
+            if (!data.coordinates || data.coordinates.length === 0) {
+                return;
+            }
+            
+            // coordinates配列の最初の要素（外郭線）を使用
+            const coords = data.coordinates;
+            
+            // [lng, lat] を [lat, lng] に変換
+            const latLngs = coords.map(coord => [coord[1], coord[0]]);
+            
+            // ポリゴンを作成
+            const polygon = L.polygon(latLngs, {
+                color: '#8A2BE2',        // 紫色の境界線
+                weight: 2,               // 境界線の太さ
+                opacity: 0.8,            // 境界線の不透明度
+                fillColor: '#DDA0DD',    // 薄紫色の塗りつぶし
+                fillOpacity: 0.2         // 塗りつぶしの不透明度
+            });
+            
+            // ポリゴンにポップアップを追加（マーカーと同じ内容）
+            const searchKeyword = data.radius == 0 ? `${data.name}駅` : data.name;
+            const nameHtml = createPopupContent(data, searchKeyword);
+            polygon.bindPopup(nameHtml, {maxWidth: 300});
+            
+            // ポリゴン配列に追加
+            polygons.push(polygon);
+        }
+        
+        /**
+         * マーカーのためのポップアップ内容を作成(特定の文字を強調)
+         */
+        function createPopupContent(data, searchKeyword) {
+            const animals = [];
+            let highlightedName = data.name;
+            
+            animals.forEach(animal => {
+                highlightedName = highlightedName.replace(
+                    new RegExp(animal, 'g'), 
+                    `<span style="color: red;">${animal}</span>`
+                );
+            });
+
+            return '<div style="white-space: nowrap; text-align: center;">' + 
+                `<div style="font-size: 16px;"><a href="https://x.com/search?q=%22${encodeURIComponent(searchKeyword)}%22&src=typed_query" target="_blank">${highlightedName}</a></div>` +
+                `<div>${data.name_kana}</div></b></div>`;
+        }
+        
+        /**
+         * マーカーのイベントを設定
+         */
+        function setupMarkerEvents(marker, key) {
+            // ダブルクリックイベント
+            marker.on('dblclick', function() {
+                toggleMarkerColor(key, marker);
+            });
+            
+            // ダブルタップイベント（モバイル）
+            marker.on('touchend', function(e) {
+                if (e.originalEvent.detail === 2) {
+                    toggleMarkerColor(key, marker);
+                }
+            });
+            
+            // ポップアップ内のタップ（iOS対応）
+            marker.on('popupopen', function(e) {
+                const popupElement = e.popup._container;
+                popupElement.addEventListener('click', function(event) {
+                    if (!event.target.classList.contains('leaflet-popup-close-button')){
+                        toggleMarkerColor(key, marker);
+                    }
+                });
+            });
+        }
+        
+        /**
+         * マーカーアイコンを作成
+         */
+        function createMarkerIcon(color) {
+            return new L.Icon({
+                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`,
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+        }
+        
+        /**
+         * マーカーの色を切り替える
+         */
+        function toggleMarkerColor(key, marker) {
+            if (localStorage.getItem(key) === 'red') {
+                marker.setIcon(createMarkerIcon('blue'));
+                localStorage.removeItem(key);
+                redMarkerCount--;
+            } else {
+                marker.setIcon(createMarkerIcon('red'));
+                localStorage.setItem(key, 'red');
+                redMarkerCount++;
+            }
+            updateMarkerCount();
+        }
+        
+        /**
+         * マーカー数の表示を更新
+         */
+        function updateMarkerCount() {
+            document.getElementById('red-markers-count').textContent = redMarkerCount;
+            document.getElementById('total-markers-count').textContent = totalMarkerCount;
+        }
+        
+        /**
+         * ズームレベルに応じて円とポリゴンの表示を更新
+         */
+        function updateVisibility() {
+            const currentZoom = map.getZoom();
+            
+            // 円の表示/非表示
+            circles.forEach(function(circle) {
+                if (currentZoom > ZOOM_THRESHOLD) {
+                    if (!map.hasLayer(circle)) {
+                        circle.addTo(map);
+                    }
+                } else {
+                    if (map.hasLayer(circle)) {
+                        map.removeLayer(circle);
+                    }
+                }
+            });
+            
+            // ポリゴンの表示/非表示
+            polygons.forEach(function(polygon) {
+                if (currentZoom > ZOOM_THRESHOLD) {
+                    if (!map.hasLayer(polygon)) {
+                        polygon.addTo(map);
+                    }
+                } else {
+                    if (map.hasLayer(polygon)) {
+                        map.removeLayer(polygon);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * ストレージキーを取得
+         */
+        function getStorageKey(data) {
+            return PREFIX + data.lat + "_" + data.lng;
+        }
+        
+        /**
+         * 位置追跡機能の設定
+         */
+        function setupLocationTracking() {
+            const locationButton = document.getElementById('location-button');
+            
+            locationButton.addEventListener('click', function() {
+                toggleLocationTracking();
+            });
+            
+            // ボタンのタッチイベント
+            locationButton.addEventListener('touchend', function() {
+                this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)';
+            });
+        }
+        
+        /**
+         * 位置追跡ボタンの見た目を更新
+         */
+        function updateLocationButtonAppearance() {
+            const locationButton = document.getElementById('location-button');
+            
+            if (isFollowing) {
+                locationButton.classList.add('following');
+            } else {
+                locationButton.classList.remove('following');
+            }
+        }
+        
+        /**
+         * 位置追跡の切り替え
+         */
+        function toggleLocationTracking() {
+            if (!isTracking) {
+                // トラッキング開始
+                map.locate({ watch: true, maxZoom: INITIAL_LOCATION_ZOOM });
+                isTracking = true;
+                isFollowing = true;
+                isFirstLocation = true;
+                userInteracted = false;
+                
+                if (locationMarker && radiusCircle) {
+                    map.addLayer(locationMarker);
+                    map.addLayer(radiusCircle);
+                }
+            } else if (isTracking && !isFollowing) {
+                // 追跡モードのみ再開（現在のズームレベルを維持）
+                isFollowing = true;
+                userInteracted = false;
+                
+                // 現在地に移動（ズームレベルはそのまま）
+                if (locationMarker) {
+                    // ズーム率を変更せずに中心位置のみ移動
+                    map.panTo(locationMarker.getLatLng());
+                }
+            } else {
+                // トラッキング停止
+                map.stopLocate();
+                isTracking = false;
+                isFollowing = false;
+                
+                if (locationMarker && radiusCircle) {
+                    map.removeLayer(locationMarker);
+                    map.removeLayer(radiusCircle);
+                }
+            }
+            
+            // ボタンの見た目を更新
+            updateLocationButtonAppearance();
+        }
+        
+        /**
+         * 位置が見つかった時のイベントハンドラ
+         */
+        function onLocationFound(e) {
+            const radius = e.accuracy / 2;
+            
+            if (locationMarker) {
+                // 既存のマーカーの位置を更新
+                locationMarker.setLatLng(e.latlng);
+                radiusCircle.setLatLng(e.latlng);
+                radiusCircle.setRadius(radius);
+            } else {
+                // 初回のみマーカーを作成
+                const pulsingIcon = L.divIcon({
+                    className: 'blinking',
+                    html: '<div style="background-color: rgba(0, 0, 255, 0.5); width: 20px; height: 20px; border-radius: 50%;"></div>',
+                    iconSize: [20, 20]
+                });
+                
+                locationMarker = L.marker(e.latlng, { icon: pulsingIcon });
+                radiusCircle = L.circle(e.latlng, radius);
+                
+                // 表示状態がオンの場合のみ追加
+                if (isTracking) {
+                    map.addLayer(locationMarker);
+                    map.addLayer(radiusCircle);
+                }
+            }
+            
+            // 追跡モードが有効かつユーザーによる操作がない場合、地図を現在位置に移動
+            if (isTracking && isFollowing && !userInteracted) {
+                if (isFirstLocation) {
+                    // 初回は指定のズームレベルで表示
+                    map.setView(e.latlng, INITIAL_LOCATION_ZOOM);
+                    isFirstLocation = false;
+                } else {
+                    // 以降は現在のズームレベルを維持して位置のみ移動
+                    map.panTo(e.latlng);
+                }
+            }
+        }
+        
+        /**
+         * 位置取得エラー時のイベントハンドラ
+         */
+        function onLocationError(e) {
+            alert('位置情報を取得できませんでした。');
+            isTracking = false;
+            isFollowing = false;
+            updateLocationButtonAppearance();
+        }
+    </script>
+</body>
+</html>
