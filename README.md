@@ -10,4 +10,5 @@
 - [2025/05/22 15:00 - 2025/11/03 23:59 - 東海ななと巡る！橙色の在来線旅](https://ksasao.github.io/ekimemo/20250522/)
 - [2025/06/01 15:00 - 2025/07/03 15:00 - Key to Infinity - 11周年イベント](https://ksasao.github.io/ekimemo/20250601/)
 - [2025/07/02 15:00 - 2025/10/02 15:00 - ざつメモ](https://ksasao.github.io/ekimemo/20250702/)
+- [2025/08/08 11:00 - 2025/9/28 21:00 - 「駅メモ！」シリーズ × pop up shop in マルイ 2025](https://ksasao.github.io/ekimemo/20250808/)
 - [2025/09/19 - 2025/12/22 - しいらと巡る「ものづくりのまち燕」にときめく旅](https://ksasao.github.io/ekimemo/20250919/)
