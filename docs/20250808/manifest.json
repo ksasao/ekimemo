@@ -1,0 +1,19 @@
+{
+    "name": "「駅メモ！」シリーズ × pop up shop in マルイ 2025",
+    "short_name": "マルイ2025",
+    "icons": [
+      {
+        "src": "icon_192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "icon_512a.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any maskable"
+      }
+    ],
+    "display": "browser"
+  }
+  
