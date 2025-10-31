@@ -46,76 +46,7 @@ region_polys, region_pts_indices = voronoi_regions_from_coords(
     per_geom=False 
 )
 
-# --- 3. 測地線補間関数 ---
-def densify_geodesic(polygon, max_segment_length=100000):  # 100km
-    """
-    ポリゴンのエッジを測地線に沿って細分化する
-    
-    Parameters:
-    -----------
-    polygon : shapely.geometry.Polygon
-        細分化するポリゴン
-    max_segment_length : float
-        最大セグメント長（メートル単位）
-    
-    Returns:
-    --------
-    shapely.geometry.Polygon
-        細分化されたポリゴン
-    """
-    # 測地線計算用のGeodオブジェクトを作成
-    from pyproj import Geod
-    geod = Geod(ellps='WGS84')
-    
-    def densify_line(coords):
-        """座標リストを測地線に沿って細分化"""
-        dense_coords = []
-        
-        for i in range(len(coords) - 1):
-            lon1, lat1 = coords[i]
-            lon2, lat2 = coords[i + 1]
-            
-            # 2点間の測地線距離を計算
-            azimuth, back_azimuth, distance = geod.inv(lon1, lat1, lon2, lat2)
-            
-            # 必要な分割数を計算
-            n_segments = max(2, int(np.ceil(distance / max_segment_length)))
-            
-            # 測地線に沿って中間点を生成
-            for j in range(n_segments):
-                if j == 0:
-                    dense_coords.append(coords[i])
-                else:
-                    # 測地線上の点を計算
-                    fraction = j / n_segments
-                    lon_inter, lat_inter, _ = geod.fwd(
-                        lon1, lat1, azimuth, distance * fraction
-                    )
-                    dense_coords.append((lon_inter, lat_inter))
-        
-        # 最後の点を追加
-        dense_coords.append(coords[-1])
-        
-        return dense_coords
-    
-    # 外側の境界を細分化
-    exterior_coords = list(polygon.exterior.coords)
-    dense_exterior = densify_line(exterior_coords)
-    
-    # 内側の穴も細分化（もしあれば）
-    dense_interiors = []
-    for interior in polygon.interiors:
-        interior_coords = list(interior.coords)
-        dense_interior = densify_line(interior_coords)
-        dense_interiors.append(dense_interior)
-    
-    # 新しいポリゴンを作成
-    if dense_interiors:
-        return Polygon(dense_exterior, dense_interiors)
-    else:
-        return Polygon(dense_exterior)
-
-# --- 4. 別の方法: 簡易的な細分化（より高速） ---
+# --- 3. 簡易的な細分化 ---
 def densify_polygon_simple(polygon, num_points=50):
     """
     ポリゴンのエッジを単純に細分化する（測地線ではないが高速）
@@ -176,7 +107,7 @@ def densify_polygon_simple(polygon, num_points=50):
     else:
         return Polygon(dense_exterior)
 
-# --- 5. ボロノイ領域の GeoDataFrame を作成（細分化付き） ---
+# --- 4. ボロノイ領域の GeoDataFrame を作成（細分化付き） ---
 print("ボロノイ領域を細分化してGeoDataFrameに変換中...")
 
 voronoi_list = []
@@ -213,7 +144,7 @@ for idx, (i, poly) in enumerate(region_polys.items()):
 # ボロノイ領域のGeoDataFrame
 voronoi_gdf = gpd.GeoDataFrame(voronoi_list, crs="EPSG:4326")
 
-# --- 6. Folium 地図の作成 ---
+# --- 5. Folium 地図の作成 ---
 print("Folium地図を作成中...")
 # 地図オブジェクトを作成
 m = folium.Map()
@@ -238,7 +169,7 @@ g = folium.GeoJson(
     smooth_factor=0  # 簡略化を無効にして、細分化した点を保持
 ).add_to(m)
 
-# --- 7. クリック位置にポップアップを表示するカスタムJavaScript ---
+# --- 6. クリック位置にポップアップを表示するカスタムJavaScript ---
 class CustomClickHandler(MacroElement):
     _template = Template(u"""
     {% macro script(this, kwargs) %}
@@ -319,7 +250,7 @@ credit_html = """
 m.get_root().html.add_child(folium.Element(credit_html))
 m.get_root().header.add_child(folium.Element("<title>駅メモ！世界の最寄り駅</title>"))
 
-# --- 8. 地図をHTMLファイルとして保存 ---
+# --- 7. 地図をHTMLファイルとして保存 ---
 OUTPUT_FILE = "index.html"
 m.save(OUTPUT_FILE)
 
