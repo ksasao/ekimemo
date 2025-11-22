@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>駅メモ！レーダー検知範囲</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #f5f6fa;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* 上部コントロールバー */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.8rem;
+      background: #ffffffcc;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      position: relative;
+      z-index: 1000;
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .toolbar label {
+      font-size: 0.8rem;
+      color: #555;
+      white-space: nowrap;
+    }
+
+    .toolbar input[type="text"],
+    .toolbar input[type="number"],
+    .toolbar select {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      border: 1px solid #cfd4e0;
+      font-size: 0.85rem;
+      min-width: 4rem;
+      background: #ffffff;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    .toolbar input[type="text"]:focus,
+    .toolbar input[type="number"]:focus,
+    .toolbar select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+      background: #ffffff;
+    }
+
+    .toolbar button {
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.85rem;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+      transition: transform 0.1s ease, box-shadow 0.1s ease,
+        filter 0.1s ease;
+      white-space: nowrap;
+    }
+
+    .toolbar button:hover {
+      filter: brightness(1.05);
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.45);
+    }
+
+    .toolbar button:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 4px rgba(37, 99, 235, 0.4);
+    }
+
+    #selectedStationLabel {
+      font-size: 0.82rem;
+      color: #374151;
+      margin: 0.1rem 0.6rem 0.4rem;
+    }
+
+    #map {
+      flex: 1 1 auto;
+    }
+
+    /* モバイル向け調整 */
+    @media (max-width: 768px) {
+      .toolbar {
+        gap: 0.4rem;
+      }
+      .toolbar-group {
+        width: 100%;
+      }
+      .toolbar input[type="text"] {
+        flex: 1 1 auto;
+        min-width: 8rem;
+      }
+      .toolbar select {
+        max-width: 45vw;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div id="app">
+  <div class="toolbar">
+    <div class="toolbar-group" style="flex:1 1 auto; min-width: 14rem;">
+      <label for="stationSearchInput">駅名検索</label>
+      <input
+        type="text"
+        id="stationSearchInput"
+        placeholder="1文字以上でインクリメンタル検索"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="toolbar-group">
+      <label for="stationSelect">候補</label>
+      <select id="stationSelect"></select>
+    </div>
+
+    <div class="toolbar-group">
+      <label for="nInput">検知数:</label>
+      <input type="number" id="nInput" value="20" min="1" max="99" style="width:2rem;" />
+    </div>
+
+    <div class="toolbar-group">
+      <label for="gridSizeInput">グリッド(px):</label>
+      <input
+        type="number"
+        id="gridSizeInput"
+        value="12"
+        min="2"
+        max="64"
+        style="width:4.2rem;"
+      />
+    </div>
+
+    <div class="toolbar-group">
+      <button id="drawButton">描画</button>
+    </div>
+  </div>
+
+  <div id="selectedStationLabel">選択中の駅: なし</div>
+  <div id="map"></div>
+</div>
+
+<script>
+  // ===== Leaflet 初期化 =====
+  const map = L.map("map", {
+    center: [35.681236, 139.767125],
+    zoom: 11,
+    zoomControl: true,
+  });
+
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors / 駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank">駅データ</a> を利用しています',
+    }
+  ).addTo(map);
+
+  // パン / ズーム用の pane
+  map.createPane("gridPane");
+  map.getPane("gridPane").style.zIndex = 400;
+
+  map.createPane("markerPane");
+  map.getPane("markerPane").style.zIndex = 650;
+
+  const overlayLayer = L.layerGroup(null, { pane: "gridPane" }).addTo(map);
+  const markerLayer  = L.layerGroup(null, { pane: "markerPane" }).addTo(map);
+
+  // ===== 駅データ =====
+  let stations = [];         // 生データ
+  let stationPositions = []; // {id, name, lat, lng}
+  const idToIndex = new Map();
+
+  // 駅データ読み込み
+  fetch("station.json")
+    .then(res => res.json())
+    .then(json => {
+      stations = json;
+      stationPositions = stations.map((st, idx) => {
+        idToIndex.set(st.id, idx);
+        return {
+          id: st.id,
+          name: st.name,
+          name_kana: st.name_kana || "",
+          lat: st.lat,
+          lng: st.lng,
+        };
+      });
+
+      initSearchOptions();
+    })
+    .catch(err => {
+      console.error("station.json の読み込みに失敗しました:", err);
+      alert("station.json の読み込みに失敗しました。コンソールを確認してください。");
+    });
+
+  // ===== 検索 & セレクト関連 =====
+  const searchInput  = document.getElementById("stationSearchInput");
+  const stationSelect = document.getElementById("stationSelect");
+  const selectedStationLabel = document.getElementById("selectedStationLabel");
+  const nInput = document.getElementById("nInput");
+  const gridSizeInput = document.getElementById("gridSizeInput");
+  const drawButton = document.getElementById("drawButton");
+
+  // スクロール（パン）を 1秒 デバウンスするためのタイマー
+  let panDebounceTimer = null;
+  const PAN_DELAY_MS = 1000;
+
+  // グリッド再描画のデバウンス
+  let redrawTimer = null;
+  const REDRAW_DELAY_MS = 150;
+
+  function initSearchOptions() {
+    // 初期状態では全部入れておく（ただし数が多いので先頭の数十件でも良い）
+    updateStationSelectOptions("");
+    // 何か1駅を初期選択
+    if (stationSelect.options.length > 0) {
+      stationSelect.selectedIndex = 0;
+      const st = getSelectedStation();
+      searchInput.value = st ? st.name : "";
+      updateSelectedStationLabel();
+      schedulePanToSelectedStation();
+    }
+  }
+
+  function updateStationSelectOptions(query) {
+    stationSelect.innerHTML = "";
+
+    let list;
+    if (!query) {
+      // 検索文字列が空のときは頭から100駅まで
+      list = stationPositions.slice(0, 100);
+    } else {
+      const q = query.trim();
+      if (!q) {
+        list = stationPositions.slice(0, 100);
+      } else {
+        list = stationPositions.filter(st =>
+          st.name.includes(q) || st.name_kana.includes(q)
+        );
+      }
+    }
+
+    if (list.length === 0) {
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.textContent = "該当なし";
+      stationSelect.appendChild(opt);
+      return;
+    }
+
+    list.forEach(st => {
+      const opt = document.createElement("option");
+      opt.value = st.id;
+      opt.textContent = st.name;
+      stationSelect.appendChild(opt);
+    });
+  }
+
+  function getSelectedStation() {
+    const id = Number(stationSelect.value);
+    if (!idToIndex.has(id)) return null;
+    const idx = idToIndex.get(id);
+    return stationPositions[idx];
+  }
+
+  function updateSelectedStationLabel() {
+    const st = getSelectedStation();
+    selectedStationLabel.textContent =
+      st ? `選択中の駅: ${st.name}` : "選択中の駅: なし";
+  }
+
+  // 駅マーカー（赤丸）の更新
+  let currentMarker = null;
+  function updateStationMarker() {
+    const st = getSelectedStation();
+    markerLayer.clearLayers();
+    currentMarker = null;
+    if (!st) return;
+
+    currentMarker = L.circleMarker([st.lat, st.lng], {
+      radius: 7,
+      color: "#ff0000",
+      weight: 2,
+      fillColor: "#ff3366",
+      fillOpacity: 0.9,
+      pane: "markerPane",
+    }).addTo(markerLayer);
+  }
+
+  function panToSelectedStation() {
+    const st = getSelectedStation();
+    if (!st) return;
+
+    // 表示位置とマーカー更新
+    const targetZoom = Math.max(map.getZoom(), 12);
+    map.setView([st.lat, st.lng], targetZoom, { animate: true });
+    updateStationMarker();
+  }
+
+  function schedulePanToSelectedStation() {
+    if (panDebounceTimer) {
+      clearTimeout(panDebounceTimer);
+      panDebounceTimer = null;
+    }
+    panDebounceTimer = setTimeout(() => {
+      panDebounceTimer = null;
+      panToSelectedStation();
+    }, PAN_DELAY_MS);
+  }
+
+  // ===== イベント =====
+
+  // インクリメンタルサーチ（1文字以上で絞り込み）
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value;
+    updateStationSelectOptions(q);
+
+    // 最初の候補を自動選択
+    if (stationSelect.options.length > 0) {
+      stationSelect.selectedIndex = 0;
+    }
+    updateSelectedStationLabel();
+
+    // 入力が止まって 1 秒経ってからマップをパンする
+    schedulePanToSelectedStation();
+  });
+
+  // セレクトボックスで駅を変更したとき
+  stationSelect.addEventListener("change", () => {
+    const st = getSelectedStation();
+    if (st) {
+      searchInput.value = st.name;
+    }
+    updateSelectedStationLabel();
+    schedulePanToSelectedStation();
+  });
+
+  // n / グリッドサイズ変更
+  nInput.addEventListener("change", () => {
+    scheduleRedraw();
+  });
+  gridSizeInput.addEventListener("change", () => {
+    scheduleRedraw();
+  });
+
+  drawButton.addEventListener("click", () => {
+    drawGridOverlay();
+  });
+
+  // 地図の移動・ズームが完了したときに再描画
+  map.on("moveend", () => {
+    scheduleRedraw();
+  });
+
+  function scheduleRedraw() {
+    if (!getSelectedStation()) return;
+    if (redrawTimer) clearTimeout(redrawTimer);
+    redrawTimer = setTimeout(() => {
+      redrawTimer = null;
+      drawGridOverlay();
+    }, REDRAW_DELAY_MS);
+  }
+
+  // ===== グリッド描画ロジック =====
+
+  let isDrawing = false;
+
+  function drawGridOverlay() {
+    const st = getSelectedStation();
+    if (!st) return;
+
+    if (isDrawing) {
+      // 同時実行を避けるため
+      return;
+    }
+    isDrawing = true;
+
+    overlayLayer.clearLayers();
+
+    const n = Math.max(1, Number(nInput.value) || 1);
+    const gridSizePx = Math.max(2, Number(gridSizeInput.value) || 12);
+
+    const bounds = map.getBounds();
+    const topLeft = bounds.getNorthWest();
+    const bottomRight = bounds.getSouthEast();
+
+    const tlPoint = map.latLngToContainerPoint(topLeft);
+    const brPoint = map.latLngToContainerPoint(bottomRight);
+
+    const startX = Math.floor(tlPoint.x / gridSizePx) * gridSizePx;
+    const startY = Math.floor(tlPoint.y / gridSizePx) * gridSizePx;
+    const endX = Math.ceil(brPoint.x / gridSizePx) * gridSizePx;
+    const endY = Math.ceil(brPoint.y / gridSizePx) * gridSizePx;
+
+    // 距離計算用に駅座標配列（lat/lng）を用意
+    const selectedId = st.id;
+
+    for (let y = startY; y < endY; y += gridSizePx) {
+      for (let x = startX; x < endX; x += gridSizePx) {
+        const cx = x + gridSizePx / 2;
+        const cy = y + gridSizePx / 2;
+        const centerLatLng = map.containerPointToLatLng([cx, cy]);
+
+        // ユークリッド距離（lat/lng 上）で n 番目までの駅を求める
+        const maxRank = n;
+        const bestDist = new Array(maxRank).fill(Infinity);
+        const bestId   = new Array(maxRank).fill(-1);
+
+        for (let i = 0; i < stationPositions.length; i++) {
+          const s = stationPositions[i];
+          const dx = s.lng - centerLatLng.lng;
+          const dy = s.lat - centerLatLng.lat;
+          const d2 = dx * dx + dy * dy; // squared Euclidean
+
+          // 一番遠い n 番目より遠ければ無視
+          if (d2 >= bestDist[maxRank - 1]) continue;
+
+          // 挿入位置を探す（小さい順）
+          let j = maxRank - 1;
+          while (j > 0 && d2 < bestDist[j - 1]) {
+            bestDist[j] = bestDist[j - 1];
+            bestId[j]   = bestId[j - 1];
+            j--;
+          }
+          bestDist[j] = d2;
+          bestId[j]   = s.id;
+        }
+
+        let rank = 0;
+        for (let k = 0; k < maxRank; k++) {
+          if (bestId[k] === selectedId) {
+            rank = k + 1;
+            break;
+          }
+        }
+
+        if (rank === 0) continue;
+
+        const x0 = x;
+        const y0 = y;
+        const x1 = x + gridSizePx;
+        const y1 = y + gridSizePx;
+
+        const nw = map.containerPointToLatLng([x0, y0]);
+        const se = map.containerPointToLatLng([x1, y1]);
+
+        if (rank === n) {
+          // ちょうど n 番目 → 赤
+          const rect = L.rectangle([nw, se], {
+            pane: "gridPane",
+            color: "#ff0000",
+            weight: 0,
+            fillColor: "#ff6666",
+            fillOpacity: 0.35,
+          });
+          overlayLayer.addLayer(rect);
+        } else if (rank > 0 && rank < n) {
+          // もっと近い順位（1〜n-1） → 薄い青
+          const rect = L.rectangle([nw, se], {
+            pane: "gridPane",
+            color: "#0000ff",
+            weight: 0,
+            fillColor: "#6699ff",
+            fillOpacity: 0.25,
+          });
+          overlayLayer.addLayer(rect);
+        }
+      }
+    }
+
+    // マーカーを最前面に保つ（念のため）
+    updateStationMarker();
+
+    isDrawing = false;
+  }
+</script>
+</body>
+</html>
