@@ -284,6 +284,7 @@
         center: [35.681236, 139.767125], // 東京駅あたり
         zoom: 11,
         zoomControl: true,
+        preferCanvas: true,
       });
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -596,73 +597,115 @@
 
     function drawOverlay() {
       const st = getSelectedStation();
-      if (!st || !kdRoot) return;
+      if (!st) return;
 
       const n = Math.max(1, Number(nInput.value) || 1);
       const gridPx = Math.max(2, Number(gridInput.value) || 8);
 
       overlayLayer.clearLayers();
 
+      const targetLat = st.lat;
+      const targetLng = st.lng;
+
       const mapSize = map.getSize();
       const width = mapSize.x;
       const height = mapSize.y;
 
-      const maxK = Math.min(n, stationPositions.length);
-
       for (let y = 0; y < height; y += gridPx) {
+        let runType = null;      // "exact" / "inner" / null
+        let runStartX = 0;
+
         for (let x = 0; x < width; x += gridPx) {
           const cx = x + gridPx / 2;
           const cy = y + gridPx / 2;
-
           const latlng = map.containerPointToLatLng([cx, cy]);
-          const tLat = latlng.lat;
-          const tLng = latlng.lng;
 
-          const dyT = tLat - st.lat;
-          const dxT = tLng - st.lng;
-          const dTarget2 = dxT * dxT + dyT * dyT;
+          let cellType = null;   // このセルの種別: "exact" / "inner" / null
 
-          // 世界一周しないようにスキップ
-          if (tLng < -180 || tLng > 180){
-            continue;
-          }
-          // 駅そのものの位置付近
-          if (dTarget2 === 0) {
-            addGridRect(x, y, gridPx, "exact");
-            continue;
-          }
+          // WebMercator の範囲外は「何も描かないセル」として扱う
+          if (
+            latlng.lng < -180 || latlng.lng > 180 
+          ) {
+            cellType = null;
+          } else {
+            const dyT = latlng.lat - targetLat;
+            const dxT = latlng.lng - targetLng;
+            const dTarget2 = dxT * dxT + dyT * dyT;
 
-          // kd-tree で "n 個の最近傍駅" を取得
-          const best = [];
-          kdKNearest(kdRoot, tLat, tLng, maxK, best);
-
-          if (best.length === 0) continue;
-
-          // 昇順（近い→遠い）に並べる
-          best.sort((a, b) => a.dist2 - b.dist2);
-
-          // target 駅が何番目かを確認
-          let rank = null;
-          for (let i = 0; i < best.length; i++) {
-            if (best[i].point.index === st.index) {
-              rank = i + 1; // 1-based
-              break;
+            if (dTarget2 === 0) {
+              cellType = "exact";
+            } else {
+              let closerCount = 0;
+              for (let i = 0; i < stationPositions.length; i++) {
+                if (i === st.index) continue;
+                const sp = stationPositions[i];
+                const dy = latlng.lat - sp.lat;
+                const dx = latlng.lng - sp.lng;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < dTarget2) {
+                  closerCount++;
+                  if (closerCount >= n) break;
+                }
+              }
+              if (closerCount < n) {
+                cellType = (closerCount + 1 === n) ? "exact" : "inner";
+              }
             }
           }
 
-          if (rank === null) {
-            // n 個の最近傍に入っていない → rank > n
+          // --- ランレングス圧縮部分 ---
+          if (cellType === runType) {
+            // 同じ種別が続いている → 何もしない（右へ伸ばすだけ）
             continue;
-          }
-
-          if (rank === n) {
-            addGridRect(x, y, gridPx, "exact");
-          } else if (rank < n) {
-            addGridRect(x, y, gridPx, "inner");
+          } else {
+            // 直前までの run を確定
+            if (runType !== null) {
+              addGridRunRect(runStartX, y, x, gridPx, runType);
+            }
+            // 新しい run を開始するか、run を終了するか
+            if (cellType !== null) {
+              runType = cellType;
+              runStartX = x;
+            } else {
+              runType = null;
+            }
           }
         }
+
+        // 行末で最後の run を flush
+        if (runType !== null) {
+          addGridRunRect(runStartX, y, width, gridPx, runType);
+        }
       }
+
     }
+
+    // 横方向の区間 [x0, x1) を一気に塗る
+    function addGridRunRect(x0, y0, x1, gridPx, type) {
+      const nw = map.containerPointToLatLng([x0, y0]);
+      const se = map.containerPointToLatLng([x1, y0 + gridPx]);
+
+      const style =
+        type === "exact"
+          ? {
+              pane: "gridPane",
+              color: "#ff0000",
+              weight: 0,
+              fillColor: "#ff6666",
+              fillOpacity: 0.35,
+            }
+          : {
+              pane: "gridPane",
+              color: "#0000ff",
+              weight: 0,
+              fillColor: "#6666ff",
+              fillOpacity: 0.25,
+            };
+
+      const rect = L.rectangle([nw, se], style);
+      overlayLayer.addLayer(rect);
+    }
+
 
     function addGridRect(x0, y0, gridPx, type) {
       const x1 = x0 + gridPx;
