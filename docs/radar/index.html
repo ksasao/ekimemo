@@ -160,6 +160,13 @@
       color: var(--text-sub);
     }
 
+    /* iOS Safari のフォーム自動ズーム対策 */
+    input[type="text"],
+    input[type="number"],
+    select {
+      font-size: 16px;  /* ここが重要。16px 以上にする */
+    }
+
     /* PC では2〜3列レイアウトにしてコンパクトに */
     @media (min-width: 640px) {
       .form-grid {
@@ -218,15 +225,15 @@
           <div class="form-row">
             <div class="form-label">検知数</div>
             <div class="form-control-wrap">
-              <input id="nInput" type="number" min="1" max="40" value="18" />
+              <select id="nInput"></select>
             </div>
           </div>
 
           <!-- グリッド -->
           <div class="form-row">
-            <div class="form-label">グリッド(px)</div>
+            <div class="form-label">グリッド</div>
             <div class="form-control-wrap">
-              <input id="gridInput" type="number" min="2" max="40" value="12" />
+              <select id="gridInput"></select>
             </div>
           </div>
 
@@ -274,6 +281,24 @@
     const gridInput = document.getElementById("gridInput");
     const drawButton = document.getElementById("drawButton");
     const selectedStationLabel = document.getElementById("selectedStationLabel");
+
+    function fillSelectRange(selectEl, start, end, step, defaultValue, labelSuffix = '') {
+      for (let v = start; v <= end; v += step) {
+        const opt = document.createElement('option');
+        opt.value = String(v);
+        opt.textContent = labelSuffix ? `${v} ${labelSuffix}` : String(v);
+        if (v === defaultValue) {
+          opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+      }
+    }
+
+    // 検知数: 1〜50, 1刻み
+    fillSelectRange(nInput, 1, 50, 1, 18, '駅');
+
+    // グリッド: 2〜64, 2刻み（デフォルト ）
+    fillSelectRange(gridInput, 2, 64, 2, 12, 'px');
 
     // --- 初期化 ---
     initMap();
