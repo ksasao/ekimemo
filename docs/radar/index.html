@@ -387,44 +387,64 @@
     // --- 駅候補の更新（インクリメンタルサーチ） ---
     function updateStationCandidates(query) {
       const q = (query || "").trim();
-      const options = [];
+      const lower = q.toLowerCase();
 
-      let list;
+      let list = [];
+
       if (q.length >= 1) {
-        const lower = q.toLowerCase();
-        list = stations.filter((s) => {
-          const name = s.name.toLowerCase();
-          const kana = (s.name_kana || "").toLowerCase();
-          return name.includes(lower) || kana.includes(lower);
-        });
+        // ★ 完全一致（駅名）を探す
+        let exact = stationPositions.find(
+          (s) => s.name.toLowerCase() === lower || (s.name_kana || "").toLowerCase() === lower
+        );
+
+        if (exact) {
+          // 完全一致を最優先でリストの先頭に置く
+          list = [exact];
+
+          // 他の部分一致を追加（ただし完全一致と同じIDは除く）
+          const others = stationPositions.filter((s) =>
+            (s.name.toLowerCase().includes(lower) ||
+            (s.name_kana || "").toLowerCase().includes(lower)) &&
+            s.id !== exact.id
+          );
+
+          list = list.concat(others.slice(0, 199)); // 最大200件に制限
+        } else {
+          // 通常の部分一致
+          list = stationPositions.filter((s) =>
+            s.name.toLowerCase().includes(lower) ||
+            (s.name_kana || "").toLowerCase().includes(lower)
+          ).slice(0, 200);
+        }
       } else {
-        // クエリが空なら適当に先頭の100件を表示
-        list = stations.slice(0, 100);
+        // 検索ワードなし → 最初の100件
+        list = stationPositions.slice(0, 100);
       }
 
+      // 候補を更新
+      stationSelect.innerHTML = "";
       const fragment = document.createDocumentFragment();
 
-      list.slice(0, 200).forEach((s) => {
+      list.forEach((s) => {
         const opt = document.createElement("option");
-        opt.value = String(s.id);
+        opt.value = s.id;
         opt.textContent = s.name;
         fragment.appendChild(opt);
       });
 
-      stationSelect.innerHTML = "";
       stationSelect.appendChild(fragment);
 
-      // 何かしら候補があれば最初を選択
+      // ★ 完全一致があればその駅を自動選択
       if (list.length > 0) {
-        const first = list[0];
-        stationSelect.value = String(first.id);
-        currentStationIndex = first.index;
+        stationSelect.value = list[0].id;
+        currentStationIndex = idToIndex.get(list[0].id);
         updateSelectedStationLabel();
       } else {
         currentStationIndex = null;
         updateSelectedStationLabel();
       }
     }
+
 
     // --- 選択中の駅取得＆表示 ---
     function getSelectedStation() {
