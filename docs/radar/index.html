@@ -412,13 +412,42 @@
       }
     }
 
+    let lastSearchValue = '';
+    let incrementalSearchTimerId = null;
+
     function setupEventHandlers() {
       // インクリメンタルサーチ:
       //  - 候補の更新は即時
       //  - 入力が 1 秒止まったら現在の候補で駅にパン（但しユーザーパン中はキャンセル）
       searchInput.addEventListener("input", () => {
         const q = searchInput.value.trim();
-        updateStationCandidates(q);
+        if (incrementalSearchTimerId !== null) {
+          clearTimeout(incrementalSearchTimerId);
+          incrementalSearchTimerId = null;
+        }
+
+        if (q === '') {
+          lastSearchValue = '';
+          if (searchPanTimer) {
+            clearTimeout(searchPanTimer);
+            searchPanTimer = null;
+          }
+          return;
+        }
+        // 「削除操作っぽいか？」を判定（長さが短くなっていれば削除とみなす）
+        const isDeletion = q.length < lastSearchValue.length;
+        lastSearchValue = q;
+
+        if (isDeletion) {
+          // バックスペース等のときは少し待ってから検索
+          incrementalSearchTimerId = setTimeout(() => {
+            updateStationCandidates(q);
+            incrementalSearchTimerId = null;
+          }, 350); // ここで待ち時間を調整
+        } else {
+          // 追加入力などは即時に検索
+          updateStationCandidates(q);
+        }
 
         if (searchPanTimer) clearTimeout(searchPanTimer);
         searchPanTimer = setTimeout(() => {
