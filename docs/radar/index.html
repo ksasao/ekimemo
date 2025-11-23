@@ -319,6 +319,34 @@
       });
     }
 
+    function selectInitialStationByName(name) {
+      // 名前で駅を検索
+      const st = stationPositions.find(s => s.name === name);
+      if (!st) return;
+
+      // 検索ボックスは空白のまま
+      searchInput.value = "";
+
+      // 初期化時は stationSelect を直接設定
+      stationSelect.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = st.id;
+      opt.textContent = st.name;
+      stationSelect.appendChild(opt);
+
+      // 選択インデックスをセット
+      stationSelect.value = st.id;
+      currentStationIndex = st.index;
+      updateSelectedStationLabel();
+
+      // 地図パンとマーカー設置
+      panToSelectedStation(true);
+
+      // グリッド描画
+      drawOverlay();
+    }
+
+
     async function loadStations() {
       try {
         const resp = await fetch("station.json");
@@ -347,14 +375,12 @@
           idToIndex.set(s.id, idx);
         });
 
-        // kd-tree 構築（世界スケールでもそのまま利用）
+        // kd-tree 構築
         kdRoot = buildKDTree(stationPositions);
-
-        // 初期候補
-        updateStationCandidates("");
 
         // イベント登録
         setupEventHandlers();
+        selectInitialStationByName("品川");
       } catch (e) {
         console.error("station.json の読み込みに失敗しました", e);
         alert("station.json の読み込みに失敗しました。ファイルの配置を確認してください。");
