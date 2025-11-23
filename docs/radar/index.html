@@ -391,6 +391,7 @@
           lat: s.lat,
           lng: s.lng,
           name: s.name,
+          searchKey: s.name.replace(/\(.*?\)/g, '').trim(),
           name_kana: s.name_kana,
           id: s.id,
           index: s.index,
@@ -506,7 +507,7 @@
           // その他の部分一致を追加（同じ駅は除外）
           const others = stationPositions.filter(
             (s) =>
-              (s.name.toLowerCase().includes(lower) ||
+              (s.searchKey.toLowerCase().includes(lower) ||
                 (s.name_kana || "").toLowerCase().includes(lower)) &&
               s.id !== exact.id
           );
@@ -517,7 +518,7 @@
           list = stationPositions
             .filter(
               (s) =>
-                s.name.toLowerCase().includes(lower) ||
+                s.searchKey.toLowerCase().includes(lower) ||
                 (s.name_kana || "").toLowerCase().includes(lower)
             )
             .slice(0, 200);
