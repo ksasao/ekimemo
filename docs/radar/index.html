@@ -229,14 +229,6 @@
             </div>
           </div>
 
-          <!-- グリッド -->
-          <div class="form-row">
-            <div class="form-label">グリッド</div>
-            <div class="form-control-wrap">
-              <select id="gridInput"></select>
-            </div>
-          </div>
-
           <!-- 描画ボタン -->
           <div class="form-row" style="grid-column: 1 / -1; justify-content: flex-start; margin-top: 4px;">
             <div class="form-control-wrap" style="max-width: 140px;">
@@ -264,6 +256,7 @@
     // Leaflet 関連
     let map;
     let overlayLayer;
+    let newOverlayLayer = null; // 描画中の新しいレイヤー
     let stationMarker;
 
     // 現在選択中の駅インデックス
@@ -274,11 +267,16 @@
     let mapRedrawTimer = null;      // マップ移動終了 → オーバーレイ再描画
     let paramRedrawTimer = null;    // n / グリッド変更 → オーバーレイ再描画
 
+    // グリッド段階描画制御
+    let isUserInteracting = false;  // ユーザー操作中フラグ
+    let progressiveDrawTimer = null; // 段階描画用タイマー
+    let currentDrawingGridSize = null; // 現在描画中のグリッドサイズ
+    let currentDrawingCancelled = false; // 現在の描画がキャンセルされたか
+
     // DOM キャッシュ
     const searchInput = document.getElementById("searchInput");
     const stationSelect = document.getElementById("stationSelect");
     const nInput = document.getElementById("nInput");
-    const gridInput = document.getElementById("gridInput");
     const drawButton = document.getElementById("drawButton");
     const selectedStationLabel = document.getElementById("selectedStationLabel");
 
@@ -296,9 +294,6 @@
 
     // 検知数: 1〜50, 1刻み
     fillSelectRange(nInput, 1, 50, 1, 18, '駅');
-
-    // グリッド: 2〜64, 2刻み（デフォルト ）
-    fillSelectRange(gridInput, 2, 64, 2, 12, 'px');
 
     // --- 初期化 ---
     initMap();
@@ -329,16 +324,19 @@
 
       overlayLayer = L.layerGroup().addTo(map);
 
-      // マップ操作開始 → 検索パンタイマーはキャンセル（ユーザーの意図した位置を優先）
+      // マップ操作開始 → ユーザー操作フラグON、段階描画キャンセル、検索パンタイマーもキャンセル
       map.on("movestart zoomstart", () => {
+        isUserInteracting = true;
+        cancelProgressiveDraw();
         if (searchPanTimer) {
           clearTimeout(searchPanTimer);
           searchPanTimer = null;
         }
       });
 
-      // マップ操作終了 → オーバーレイ再描画（パン位置は維持）
+      // マップ操作終了 → ユーザー操作フラグOFF、オーバーレイ再描画（パン位置は維持）
       map.on("moveend zoomend", () => {
+        isUserInteracting = false;
         if (currentStationIndex == null) return;
         scheduleMapRedraw();
       });
@@ -465,11 +463,8 @@
         panToSelectedStation(true);
       });
 
-      // 検知数・グリッド変更 → 1 秒入力が止まったらオーバーレイ再描画（パンはしない）
+      // 検知数変更 → 1 秒入力が止まったらオーバーレイ再描画（パンはしない）
       nInput.addEventListener("input", () => {
-        scheduleParamRedraw();
-      });
-      gridInput.addEventListener("input", () => {
         scheduleParamRedraw();
       });
 
@@ -610,6 +605,39 @@
       }, 1000);
     }
 
+    // --- 段階描画のキャンセル ---
+    function cancelProgressiveDraw() {
+      if (progressiveDrawTimer) {
+        clearTimeout(progressiveDrawTimer);
+        progressiveDrawTimer = null;
+      }
+      currentDrawingGridSize = null;
+      currentDrawingCancelled = true;
+    }
+
+    // --- 次のグリッドサイズをスケジュール ---
+    function scheduleNextGridSize(currentSize) {
+      // グリッドサイズの段階: 16 -> 8 -> 4 -> 2
+      const nextSize = currentSize === 16 ? 8 : currentSize === 8 ? 4 : currentSize === 4 ? 2 : null;
+      
+      if (nextSize === null) {
+        // 最終段階（2px）に到達したので終了
+        currentDrawingGridSize = null;
+        return;
+      }
+
+      // 次の段階を500msec後にスケジュール
+      progressiveDrawTimer = setTimeout(() => {
+        // ユーザー操作中なら中断
+        if (isUserInteracting) {
+          cancelProgressiveDraw();
+          return;
+        }
+        
+        drawOverlayWithGridSize(nextSize);
+      }, 500);
+    }
+
     // =========================
     // kd-tree 実装
     // =========================
@@ -677,13 +705,22 @@
     // =========================
 
     function drawOverlay() {
+      // 段階描画をキャンセルして16pxから開始
+      cancelProgressiveDraw();
+      currentDrawingCancelled = false;
+      drawOverlayWithGridSize(16);
+    }
+
+    function drawOverlayWithGridSize(gridPx) {
       const st = getSelectedStation();
       if (!st) return;
 
       const n = Math.max(1, Number(nInput.value) || 1);
-      const gridPx = Math.max(2, Number(gridInput.value) || 8);
+      currentDrawingGridSize = gridPx;
+      currentDrawingCancelled = false;
 
-      overlayLayer.clearLayers();
+      // 新しいレイヤーを作成（まだマップには追加しない）
+      newOverlayLayer = L.layerGroup();
 
       const targetLat = st.lat;
       const targetLng = st.lng;
@@ -692,77 +729,101 @@
       const width = mapSize.x;
       const height = mapSize.y;
 
-      for (let y = 0; y < height; y += gridPx) {
-        let runType = null;      // "exact" / "inner" / null
-        let runStartX = 0;
+      let currentY = 0;
 
-        for (let x = 0; x < width; x += gridPx) {
-          const cx = x + gridPx / 2;
-          const cy = y + gridPx / 2;
-          const latlng = map.containerPointToLatLng([cx, cy]);
-
-          let cellType = null;   // このセルの種別: "exact" / "inner" / null
-
-          // WebMercator の範囲外は「何も描かないセル」として扱う
-          if (
-            latlng.lng < -180 || latlng.lng > 180 
-          ) {
-            cellType = null;
-          } else {
-            const dyT = latlng.lat - targetLat;
-            const dxT = latlng.lng - targetLng;
-            const dTarget2 = dxT * dxT + dyT * dyT;
-
-            if (dTarget2 === 0) {
-              cellType = "exact";
-            } else {
-              let closerCount = 0;
-              for (let i = 0; i < stationPositions.length; i++) {
-                if (i === st.index) continue;
-                const sp = stationPositions[i];
-                const dy = latlng.lat - sp.lat;
-                const dx = latlng.lng - sp.lng;
-                const d2 = dx * dx + dy * dy;
-                if (d2 < dTarget2) {
-                  closerCount++;
-                  if (closerCount >= n) break;
-                }
-              }
-              if (closerCount < n) {
-                cellType = (closerCount + 1 === n) ? "exact" : "inner";
-              }
-            }
-          }
-
-          // --- ランレングス圧縮部分 ---
-          if (cellType === runType) {
-            // 同じ種別が続いている → 何もしない（右へ伸ばすだけ）
-            continue;
-          } else {
-            // 直前までの run を確定
-            if (runType !== null) {
-              addGridRunRect(runStartX, y, x, gridPx, runType);
-            }
-            // 新しい run を開始するか、run を終了するか
-            if (cellType !== null) {
-              runType = cellType;
-              runStartX = x;
-            } else {
-              runType = null;
-            }
-          }
+      // 行ごとに非同期で描画
+      function drawNextRows() {
+        if (currentDrawingCancelled) {
+          newOverlayLayer = null;
+          return;
         }
 
-        // 行末で最後の run を flush
-        if (runType !== null) {
-          addGridRunRect(runStartX, y, width, gridPx, runType);
+        const startTime = performance.now();
+        const maxTime = 16; // 1フレーム(16ms)内で処理
+
+        while (currentY < height && (performance.now() - startTime) < maxTime) {
+          const y = currentY;
+          let runType = null;
+          let runStartX = 0;
+
+          for (let x = 0; x < width; x += gridPx) {
+            const cx = x + gridPx / 2;
+            const cy = y + gridPx / 2;
+            const latlng = map.containerPointToLatLng([cx, cy]);
+
+            let cellType = null;
+
+            if (latlng.lng < -180 || latlng.lng > 180) {
+              cellType = null;
+            } else {
+              const dyT = latlng.lat - targetLat;
+              const dxT = latlng.lng - targetLng;
+              const dTarget2 = dxT * dxT + dyT * dyT;
+
+              if (dTarget2 === 0) {
+                cellType = "exact";
+              } else {
+                let closerCount = 0;
+                for (let i = 0; i < stationPositions.length; i++) {
+                  if (i === st.index) continue;
+                  const sp = stationPositions[i];
+                  const dy = latlng.lat - sp.lat;
+                  const dx = latlng.lng - sp.lng;
+                  const d2 = dx * dx + dy * dy;
+                  if (d2 < dTarget2) {
+                    closerCount++;
+                    if (closerCount >= n) break;
+                  }
+                }
+                if (closerCount < n) {
+                  cellType = (closerCount + 1 === n) ? "exact" : "inner";
+                }
+              }
+            }
+
+            if (cellType === runType) {
+              continue;
+            } else {
+              if (runType !== null) {
+                addGridRunRect(runStartX, y, x, gridPx, runType, newOverlayLayer);
+              }
+              if (cellType !== null) {
+                runType = cellType;
+                runStartX = x;
+              } else {
+                runType = null;
+              }
+            }
+          }
+
+          if (runType !== null) {
+            addGridRunRect(runStartX, y, width, gridPx, runType, newOverlayLayer);
+          }
+
+          currentY += gridPx;
+        }
+
+        if (currentY < height) {
+          requestAnimationFrame(drawNextRows);
+        } else {
+          // 描画完了後、古いレイヤーと入れ替え
+          if (!currentDrawingCancelled && newOverlayLayer) {
+            overlayLayer.clearLayers();
+            overlayLayer.remove();
+            overlayLayer = newOverlayLayer;
+            overlayLayer.addTo(map);
+            newOverlayLayer = null;
+          }
+          // 次のグリッドサイズをスケジュール
+          scheduleNextGridSize(gridPx);
         }
       }
 
+      requestAnimationFrame(drawNextRows);
     }
 
     // 横方向の区間 [x0, x1) を一気に塗る
-    function addGridRunRect(x0, y0, x1, gridPx, type) {
+    function addGridRunRect(x0, y0, x1, gridPx, type, targetLayer) {
       const nw = map.containerPointToLatLng([x0, y0]);
       const se = map.containerPointToLatLng([x1, y0 + gridPx]);
 
@@ -784,7 +845,7 @@
             };
 
       const rect = L.rectangle([nw, se], style);
-      overlayLayer.addLayer(rect);
+      targetLayer.addLayer(rect);
     }
 
 
