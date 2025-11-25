@@ -313,6 +313,14 @@
           '&copy; OpenStreetMap contributors / 駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank" rel="noopener noreferrer">駅データ</a> を利用しています',
       }).addTo(map);
 
+      // スケール（距離目盛り）を右下に追加
+      L.control.scale({
+        position: 'bottomright',
+        metric: true,
+        imperial: false,
+        maxWidth: 150
+      }).addTo(map);
+
       // グリッド描画用の pane / layer
       map.createPane("gridPane");
       map.getPane("gridPane").style.zIndex = 400;
