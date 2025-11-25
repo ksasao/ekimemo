@@ -252,6 +252,8 @@
     let stations = [];
     let stationPositions = [];
     const idToIndex = new Map();
+    let lines = [];
+    const codeToLine = new Map();
 
     // 県コードから県名への変換マップ
     const prefectureNames = {
@@ -405,6 +407,16 @@
 
     async function loadStations() {
       try {
+        // line.jsonを先に読み込む
+        const lineResp = await fetch("line.json");
+        const lineData = await lineResp.json();
+        
+        lines = lineData;
+        lines.forEach((line) => {
+          codeToLine.set(line.code, line);
+        });
+
+        // station.jsonを読み込む
         const resp = await fetch("station.json");
         const data = await resp.json();
 
@@ -416,6 +428,7 @@
           lat: Number(s.lat),
           lng: Number(s.lng),
           prefecture: s.prefecture,
+          lines: s.lines || [],
           index,
         }));
 
@@ -426,6 +439,7 @@
           searchKey: s.name.replace(/\(.*?\)/g, '').trim(),
           name_kana: s.name_kana,
           prefecture: s.prefecture,
+          lines: s.lines,
           id: s.id,
           index: s.index,
         }));
@@ -441,8 +455,8 @@
         setupEventHandlers();
         selectInitialStationByName("品川");
       } catch (e) {
-        console.error("station.json の読み込みに失敗しました", e);
-        alert("station.json の読み込みに失敗しました。ファイルの配置を確認してください。");
+        console.error("データの読み込みに失敗しました", e);
+        alert("データの読み込みに失敗しました。ファイルの配置を確認してください。");
       }
     }
 
@@ -614,11 +628,13 @@
         stationMarker.setLatLng(latlng);
         // ポップアップの内容を更新（既に選択されているため「この駅を指定」リンクは不要）
         const prefectureName = prefectureNames[st.prefecture] || '不明';
+        const linesHTML = getLineNamesHTML(st.lines);
         const popupContent = `
           <div style="font-family: system-ui, sans-serif; min-width: 150px;">
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #222;">${st.name}</div>
             <div style="font-size: 13px; color: #666; margin-bottom: 6px;">${st.name_kana}</div>
             <div style="font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px;">${prefectureName}</div>
+            ${linesHTML}
             <div style="font-size: 12px; color: #888; margin-top: 6px; padding-top: 4px; border-top: 1px solid #eee;">現在選択中の駅</div>
           </div>
         `;
@@ -633,13 +649,15 @@
           pane: "stationPane",
         }).addTo(map);
         
-        // ポップアップを追加（駅名、読み方、県名を表示）
+        // ポップアップを追加（駅名、読み方、県名、路線名を表示）
         const prefectureName = prefectureNames[st.prefecture] || '不明';
+        const linesHTML = getLineNamesHTML(st.lines);
         const popupContent = `
           <div style="font-family: system-ui, sans-serif; min-width: 150px;">
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #222;">${st.name}</div>
             <div style="font-size: 13px; color: #666; margin-bottom: 6px;">${st.name_kana}</div>
             <div style="font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px;">${prefectureName}</div>
+            ${linesHTML}
             <div style="font-size: 12px; color: #888; margin-top: 6px; padding-top: 4px; border-top: 1px solid #eee;">現在選択中の駅</div>
           </div>
         `;
@@ -719,6 +737,31 @@
       updateStationDots();
     }
 
+    // --- 路線名を取得する関数 ---
+    function getLineNamesHTML(lineCodes) {
+      if (!lineCodes || lineCodes.length === 0) {
+        return '';
+      }
+      
+      const lineNames = lineCodes
+        .map(code => {
+          const line = codeToLine.get(code);
+          return line ? line.name : null;
+        })
+        .filter(name => name !== null);
+      
+      if (lineNames.length === 0) {
+        return '';
+      }
+      
+      return `
+        <div style="font-size: 12px; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px solid #eee;">
+          <div style="font-weight: 600; margin-bottom: 2px;">路線:</div>
+          <div style="line-height: 1.4;">${lineNames.join('、')}</div>
+        </div>
+      `;
+    }
+
     // --- 画面内の駅ドットと駅名を更新 ---
     function updateStationDots() {
       stationDotsLayer.clearLayers();
@@ -761,26 +804,30 @@
             interactive: true  // クリック可能にする
           });
           
-          // ポップアップを追加（駅名、読み方、県名、「この駅を指定」リンクを表示）
+          // ポップアップを追加（駅名、読み方、県名、路線名、「この駅を指定」リンクを表示）
           const prefectureName = prefectureNames[s.prefecture] || '不明';
+          const linesHTML = getLineNamesHTML(s.lines);
           const popupContent = `
             <div style="font-family: system-ui, sans-serif; min-width: 150px;">
               <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #222;">${s.name}</div>
               <div style="font-size: 13px; color: #666; margin-bottom: 6px;">${s.name_kana}</div>
-              <div style="font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px; margin-bottom: 8px;">${prefectureName}</div>
-              <a href="#" onclick="selectStationByName('${s.name.replace(/'/g, "\\'")}'); return false;" style="
-                display: inline-block;
-                padding: 6px 12px;
-                background: linear-gradient(135deg, #2f80ff 0%, #175ddc 100%);
-                color: white;
-                text-decoration: none;
-                border-radius: 6px;
-                font-size: 13px;
-                font-weight: 600;
-                text-align: center;
-                box-shadow: 0 2px 4px rgba(23, 93, 220, 0.3);
-                transition: transform 0.1s ease, box-shadow 0.1s ease;
-              " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 3px 6px rgba(23, 93, 220, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(23, 93, 220, 0.3)';">この駅を指定</a>
+              <div style="font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px; margin-bottom: 4px;">${prefectureName}</div>
+              ${linesHTML}
+              <div style="margin-top: 8px;">
+                <a href="#" onclick="selectStationByName('${s.name.replace(/'/g, "\\'")}'); return false;" style="
+                  display: inline-block;
+                  padding: 6px 12px;
+                  background: linear-gradient(135deg, #2f80ff 0%, #175ddc 100%);
+                  color: white;
+                  text-decoration: none;
+                  border-radius: 6px;
+                  font-size: 13px;
+                  font-weight: 600;
+                  text-align: center;
+                  box-shadow: 0 2px 4px rgba(23, 93, 220, 0.3);
+                  transition: transform 0.1s ease, box-shadow 0.1s ease;
+                " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 3px 6px rgba(23, 93, 220, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(23, 93, 220, 0.3)';">この駅を指定</a>
+              </div>
             </div>
           `;
           circle.bindPopup(popupContent, {
