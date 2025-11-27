@@ -7,6 +7,7 @@ class RadarApp {
     this.locationManager = null;
     this.drawingManager = null;
     this.uiManager = null;
+    this.voronoiManager = null;
   }
 
   // アプリケーションを初期化
@@ -30,6 +31,10 @@ class RadarApp {
       // 位置情報マネージャーを初期化
       this.locationManager = new LocationManager(map);
       this.locationManager.setButton(document.getElementById('currentLocationBtn'));
+
+      // ボロノイマネージャーを初期化
+      this.voronoiManager = new VoronoiManager(map, this.stationManager);
+      this.voronoiManager.initialize();
 
       // イベントリスナーを設定
       this.setupEventListeners();
@@ -57,6 +62,7 @@ class RadarApp {
         if (currentStationIndex == null) return;
         this.mapManager.scheduleMapRedraw(() => {
           this.redrawOverlayAndStations();
+          this.voronoiManager.update();
         });
       }
     );
@@ -86,6 +92,14 @@ class RadarApp {
         this.mapManager.placeStationMarker(station, true);
       }
     });
+
+    // ボロノイ図トグル
+    const voronoiToggle = document.getElementById('voronoiToggle');
+    if (voronoiToggle) {
+      voronoiToggle.addEventListener('change', () => {
+        this.voronoiManager.toggleVisibility();
+      });
+    }
   }
 
   // 初期駅を設定

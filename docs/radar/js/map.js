@@ -43,6 +43,11 @@ class MapManager {
     this.map.getPane('gridPane').style.zIndex = CONFIG.zIndex.grid;
     this.map.getPane('gridPane').style.pointerEvents = 'none';
 
+    // ボロノイ図用の pane
+    this.map.createPane('voronoiPane');
+    this.map.getPane('voronoiPane').style.zIndex = CONFIG.zIndex.voronoi;
+    this.map.getPane('voronoiPane').style.pointerEvents = 'none';
+
     // 駅ドット用 pane
     this.map.createPane('stationDotsPane');
     this.map.getPane('stationDotsPane').style.zIndex = CONFIG.zIndex.stationDots;

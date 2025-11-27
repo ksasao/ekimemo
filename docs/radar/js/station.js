@@ -26,17 +26,20 @@ class StationManager {
       const stationResp = await fetch('station.json');
       const data = await stationResp.json();
 
-      this.stations = data.map((s, index) => ({
-        id: s.id,
-        code: s.code,
-        name: s.name,
-        name_kana: (s.name_kana || '').toString(),
-        lat: Number(s.lat),
-        lng: Number(s.lng),
-        prefecture: s.prefecture,
-        lines: s.lines || [],
-        index,
-      }));
+      this.stations = data.map((s, index) => {
+        return {
+          id: s.id,
+          code: s.code,
+          name: s.name,
+          name_kana: (s.name_kana || '').toString(),
+          lat: Number(s.lat),
+          lng: Number(s.lng),
+          prefecture: s.prefecture,
+          lines: s.lines || [],
+          voronoi: s.voronoi || null,
+          index,
+        };
+      });
 
       this.stationPositions = this.stations.map((s) => ({
         lat: s.lat,

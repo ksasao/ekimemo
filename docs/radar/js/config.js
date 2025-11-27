@@ -13,8 +13,16 @@ const CONFIG = {
   // レイヤーのz-index
   zIndex: {
     grid: 400,
+    voronoi: 500,
     stationDots: 600,
     stationMarker: 650
+  },
+
+  // ボロノイ図設定
+  voronoi: {
+    enabled: false,           // デフォルトでは非表示
+    lineWeight: 2,
+    lineOpacity: 0.6
   },
 
   // グリッド描画設定

@@ -62,6 +62,10 @@
             <div class="form-control-wrap" style="max-width: 140px;">
               <button id="drawButton">描画</button>
             </div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
+              <input type="checkbox" id="voronoiToggle" style="width: auto; cursor: pointer;" />
+              <label for="voronoiToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">ボロノイ図を表示</label>
+            </div>
           </div>
         </div>
 
@@ -86,6 +90,7 @@
   <script src="js/map.js"></script>
   <script src="js/location.js"></script>
   <script src="js/drawing.js"></script>
+  <script src="js/voronoi.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/app.js"></script>
 </body>
