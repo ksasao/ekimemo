@@ -1,0 +1,239 @@
+:root {
+  color-scheme: light;
+  --accent: #2f80ff;
+  --accent-soft: #e3f0ff;
+  --accent-strong: #175ddc;
+  --border-soft: #dde2eb;
+  --text-main: #222;
+  --text-sub: #666;
+  --bg: #f5f6f8;
+  --control-radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#app {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* --- コントロールエリア --- */
+
+#controls {
+  flex: 0 0 auto;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  padding: env(safe-area-inset-top) 6px 4px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+#controls-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 4px 8px;
+}
+
+#controls-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--text-sub);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-row-gap: 6px;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-label {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+.form-control-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+  width: 100%;
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: var(--control-radius);
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(47, 128, 255, 0.18);
+}
+
+#drawButton {
+  width: 110px;
+  padding: 8px 0;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+  box-shadow: 0 3px 8px rgba(23, 93, 220, 0.4);
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s ease;
+}
+
+#drawButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(23, 93, 220, 0.35);
+}
+
+#drawButton:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+  cursor: default;
+}
+
+#selectedStationLabel {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+/* iOS Safari のフォーム自動ズーム対策 */
+input[type="text"],
+input[type="number"],
+select {
+  font-size: 16px;  /* ここが重要。16px 以上にする */
+}
+
+/* PC では2〜3列レイアウトにしてコンパクトに */
+@media (min-width: 640px) {
+  .form-grid {
+    grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) auto auto auto;
+    grid-column-gap: 8px;
+    align-items: flex-end;
+  }
+
+  #drawButton {
+    width: 100%;
+  }
+}
+
+/* --- マップ --- */
+
+#map {
+  flex: 1 1 auto;
+  min-height: 240px;
+  width: 100%;
+  position: relative;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+.station-label {
+  pointer-events: none;
+}
+
+/* --- 現在地ボタン --- */
+#currentLocationBtn {
+  position: absolute;
+  bottom: 80px;
+  right: 10px;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+#currentLocationBtn:hover {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+  transform: scale(1.05);
+}
+
+#currentLocationBtn:active {
+  transform: scale(0.95);
+}
+
+#currentLocationBtn.active {
+  background: #2196F3;
+  border-color: #1976D2;
+}
+
+#currentLocationBtn svg {
+  width: 24px;
+  height: 24px;
+  fill: #666;
+  transition: fill 0.2s ease;
+}
+
+#currentLocationBtn.active svg {
+  fill: #fff;
+}
+
+/* 現在地マーカーのパルスアニメーション */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(33, 150, 243, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+  }
+}
+
+.current-location-marker {
+  animation: pulse 1.5s ease-in-out infinite;
+}
