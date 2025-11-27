@@ -186,6 +186,7 @@
       flex: 1 1 auto;
       min-height: 240px;
       width: 100%;
+      position: relative;
     }
 
     .leaflet-control-attribution {
@@ -193,6 +194,68 @@
     }
     .station-label {
       pointer-events: none;
+    }
+
+    /* --- 現在地ボタン --- */
+    #currentLocationBtn {
+      position: absolute;
+      bottom: 80px;
+      right: 10px;
+      z-index: 1000;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    #currentLocationBtn:hover {
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+      transform: scale(1.05);
+    }
+
+    #currentLocationBtn:active {
+      transform: scale(0.95);
+    }
+
+    #currentLocationBtn.active {
+      background: #2196F3;
+      border-color: #1976D2;
+    }
+
+    #currentLocationBtn svg {
+      width: 24px;
+      height: 24px;
+      fill: #666;
+      transition: fill 0.2s ease;
+    }
+
+    #currentLocationBtn.active svg {
+      fill: #fff;
+    }
+
+    /* 現在地マーカーのパルスアニメーション */
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(33, 150, 243, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+      }
+    }
+
+    .current-location-marker {
+      animation: pulse 1.5s ease-in-out infinite;
     }
   </style>
 </head>
@@ -245,6 +308,13 @@
     </div>
 
     <div id="map"></div>
+    
+    <!-- 現在地取得ボタン -->
+    <button id="currentLocationBtn" title="現在地を表示">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+      </svg>
+    </button>
   </div>
 
   <script>
@@ -528,6 +598,170 @@
         updateSelectedStationLabel();
         panToSelectedStation(true);
       });
+    }
+
+    // =========================
+    // 現在地取得機能
+    // =========================
+
+    let currentLocationMarker = null;  // 現在地マーカー
+    let currentLocationAccuracyCircle = null;  // 精度円
+    let locationWatchId = null;  // 位置情報監視ID
+    let locationUpdateTimer = null;  // 位置情報更新タイマー
+    let isTrackingLocation = false;  // 位置情報追跡中フラグ
+    const currentLocationBtn = document.getElementById('currentLocationBtn');
+
+    // 現在地ボタンのクリックイベント
+    currentLocationBtn.addEventListener('click', () => {
+      if (isTrackingLocation) {
+        // 追跡停止
+        stopLocationTracking();
+      } else {
+        // 追跡開始
+        startLocationTracking();
+      }
+    });
+
+    // 現在地追跡開始
+    function startLocationTracking() {
+      if (!navigator.geolocation) {
+        alert('お使いのブラウザは位置情報取得に対応していません。');
+        return;
+      }
+
+      isTrackingLocation = true;
+      currentLocationBtn.classList.add('active');
+
+      // 初回の位置取得（パンあり）
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateCurrentLocation(position, true);
+          // 1秒ごとの更新を開始（パンなし）
+          startPeriodicLocationUpdate();
+        },
+        (error) => {
+          handleLocationError(error);
+          stopLocationTracking();
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    // 定期的な位置情報更新を開始
+    function startPeriodicLocationUpdate() {
+      locationUpdateTimer = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            updateCurrentLocation(position, false);
+          },
+          (error) => {
+            console.error('位置情報の取得に失敗しました:', error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      }, 1000);  // 1秒ごと
+    }
+
+    // 現在地追跡停止
+    function stopLocationTracking() {
+      isTrackingLocation = false;
+      currentLocationBtn.classList.remove('active');
+
+      // タイマー停止
+      if (locationUpdateTimer) {
+        clearInterval(locationUpdateTimer);
+        locationUpdateTimer = null;
+      }
+
+      // マーカーと精度円を削除
+      if (currentLocationMarker) {
+        map.removeLayer(currentLocationMarker);
+        currentLocationMarker = null;
+      }
+      if (currentLocationAccuracyCircle) {
+        map.removeLayer(currentLocationAccuracyCircle);
+        currentLocationAccuracyCircle = null;
+      }
+    }
+
+    // 現在地を更新
+    function updateCurrentLocation(position, panToLocation) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+
+      const latlng = [lat, lng];
+
+      // 初回またはパンが必要な場合は地図を移動（ズームレベルは変更しない）
+      if (panToLocation) {
+        map.panTo(latlng);
+      }
+
+      // 精度円を更新
+      if (currentLocationAccuracyCircle) {
+        currentLocationAccuracyCircle.setLatLng(latlng);
+        currentLocationAccuracyCircle.setRadius(accuracy);
+      } else {
+        currentLocationAccuracyCircle = L.circle(latlng, {
+          radius: accuracy,
+          color: '#2196F3',
+          fillColor: '#2196F3',
+          fillOpacity: 0.15,
+          weight: 2,
+          opacity: 0.5,
+          pane: 'stationPane'
+        }).addTo(map);
+      }
+
+      // 現在地マーカーを更新
+      if (currentLocationMarker) {
+        currentLocationMarker.setLatLng(latlng);
+      } else {
+        const pulsingIcon = L.divIcon({
+          className: 'current-location-marker',
+          html: '<div style="width: 16px; height: 16px; background: #2196F3; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);"></div>',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        currentLocationMarker = L.marker(latlng, {
+          icon: pulsingIcon,
+          pane: 'stationPane',
+          zIndexOffset: 1000
+        }).addTo(map);
+
+        currentLocationMarker.bindPopup(`
+          <div style="font-family: system-ui, sans-serif;">
+            <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">現在地</div>
+            <div style="font-size: 12px; color: #666;">精度: 約${Math.round(accuracy)}m</div>
+          </div>
+        `);
+      }
+    }
+
+    // 位置情報エラーハンドリング
+    function handleLocationError(error) {
+      let message = '位置情報の取得に失敗しました。';
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          message = '位置情報の使用が許可されていません。ブラウザの設定を確認してください。';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          message = '位置情報を取得できませんでした。';
+          break;
+        case error.TIMEOUT:
+          message = '位置情報の取得がタイムアウトしました。';
+          break;
+      }
+      alert(message);
     }
 
     // --- 駅候補の更新（インクリメンタルサーチ） ---
