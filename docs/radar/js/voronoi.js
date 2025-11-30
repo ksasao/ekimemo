@@ -49,12 +49,6 @@ class VoronoiManager {
         return;
       }
 
-      // 駅が画面の拡張範囲内にあるかチェック（広めにチェック）
-      const expandedBounds = bounds.pad(0.5); // 50%拡張
-      if (!expandedBounds.contains([station.lat, station.lng])) {
-        return;
-      }
-
       const geometry = station.voronoi.geometry;
       
       // Polygonの場合
