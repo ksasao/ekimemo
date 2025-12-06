@@ -1,26 +1,22 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8" />
   <title>駅メモ！レーダー検知範囲</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="icon" type="image/png" href="favicon.png" />
 
   <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Styles -->
   <link rel="stylesheet" href="css/styles.css" />
 </head>
+
 <body>
   <div id="app">
     <div id="controls">
@@ -32,12 +28,7 @@
           <div class="form-row">
             <div class="form-label">駅名検索</div>
             <div class="form-control-wrap">
-              <input
-                id="searchInput"
-                type="text"
-                placeholder="例: 三崎口, 東京, 新大阪..."
-                autocomplete="off"
-              />
+              <input id="searchInput" type="text" placeholder="例: 三崎口, 東京, 新大阪..." autocomplete="off" />
             </div>
           </div>
 
@@ -64,7 +55,8 @@
             </div>
             <div style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
               <input type="checkbox" id="voronoiToggle" style="width: auto; cursor: pointer;" />
-              <label for="voronoiToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">ボロノイ図を表示</label>
+              <label for="voronoiToggle"
+                style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">ボロノイ図を表示</label>
             </div>
           </div>
         </div>
@@ -74,11 +66,12 @@
     </div>
 
     <div id="map"></div>
-    
+
     <!-- 現在地取得ボタン -->
     <button id="currentLocationBtn" title="現在地を表示">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+        <path
+          d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
       </svg>
     </button>
   </div>
@@ -94,4 +87,5 @@
   <script src="js/ui.js"></script>
   <script src="js/app.js"></script>
 </body>
+
 </html>
