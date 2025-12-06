@@ -39,6 +39,9 @@ class RadarApp {
       // イベントリスナーを設定
       this.setupEventListeners();
 
+      // ボロノイ図の状態を復元
+      this.restoreVoronoiState();
+
       // 初期駅を設定
       this.selectInitialStation();
 
@@ -99,6 +102,23 @@ class RadarApp {
       voronoiToggle.addEventListener('change', () => {
         this.voronoiManager.toggleVisibility();
       });
+    }
+  }
+
+  // ボロノイ図の状態を復元
+  restoreVoronoiState() {
+    const voronoiToggle = document.getElementById('voronoiToggle');
+    if (voronoiToggle && this.voronoiManager) {
+      const isVisible = this.voronoiManager.getVisibility();
+      voronoiToggle.checked = isVisible;
+      
+      // 状態がtrueの場合、ボロノイ図を表示
+      if (isVisible) {
+        if (!this.voronoiManager.voronoiLayer._map) {
+          this.voronoiManager.voronoiLayer.addTo(this.mapManager.map);
+        }
+        this.voronoiManager.drawVoronoi();
+      }
     }
   }
 

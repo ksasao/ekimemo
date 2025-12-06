@@ -11,12 +11,22 @@ class VoronoiManager {
   // ボロノイレイヤーを初期化
   initialize() {
     this.voronoiLayer = L.layerGroup();
+    
+    // localStorageから状態を復元
+    const savedState = localStorage.getItem('voronoiToggleState');
+    if (savedState !== null) {
+      this.isVisible = savedState === 'true';
+    }
+    
     return this.voronoiLayer;
   }
 
   // ボロノイ図の表示/非表示を切り替え
   toggleVisibility() {
     this.isVisible = !this.isVisible;
+    
+    // localStorageに状態を保存
+    localStorage.setItem('voronoiToggleState', this.isVisible.toString());
     
     if (this.isVisible) {
       if (!this.voronoiLayer._map) {
