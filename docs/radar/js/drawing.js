@@ -51,6 +51,19 @@ class DrawingManager {
     const width = mapSize.x;
     const height = mapSize.y;
 
+    const stationSubset = this.buildStationSubset(station, n);
+    const requiredSize = Math.min(this.stationManager.stationPositions.length, n + 1);
+    const classificationStations =
+      stationSubset.length >= requiredSize && stationSubset.length > 0
+        ? stationSubset
+        : this.stationManager.stationPositions;
+
+    if (CONFIG.debug && CONFIG.debug.logCullResult) {
+      console.log(
+        `[Drawing] culled to ${classificationStations.length} stations (n=${n}, total=${this.stationManager.stationPositions.length})`
+      );
+    }
+
     let currentY = 0;
 
     // 行ごとに非同期で描画
@@ -72,35 +85,14 @@ class DrawingManager {
           const cy = y + gridPx / 2;
           const latlng = this.map.containerPointToLatLng([cx, cy]);
 
-          let cellType = null;
-
-          if (latlng.lng < -180 || latlng.lng > 180) {
-            cellType = null;
-          } else {
-            const dyT = latlng.lat - targetLat;
-            const dxT = latlng.lng - targetLng;
-            const dTarget2 = dxT * dxT + dyT * dyT;
-
-            if (dTarget2 === 0) {
-              cellType = 'exact';
-            } else {
-              let closerCount = 0;
-              for (let i = 0; i < this.stationManager.stationPositions.length; i++) {
-                if (i === station.index) continue;
-                const sp = this.stationManager.stationPositions[i];
-                const dy = latlng.lat - sp.lat;
-                const dx = latlng.lng - sp.lng;
-                const d2 = dx * dx + dy * dy;
-                if (d2 < dTarget2) {
-                  closerCount++;
-                  if (closerCount >= n) break;
-                }
-              }
-              if (closerCount < n) {
-                cellType = (closerCount + 1 === n) ? 'exact' : 'inner';
-              }
-            }
-          }
+          const cellType = this.classifyCell(
+            latlng,
+            station,
+            n,
+            targetLat,
+            targetLng,
+            classificationStations
+          );
 
           if (cellType === runType) {
             continue;
@@ -141,6 +133,171 @@ class DrawingManager {
     };
 
     requestAnimationFrame(drawNextRows);
+  }
+
+  classifyCell(latlng, station, detectionCount, targetLat, targetLng, candidateStations) {
+    if (!latlng) return null;
+    if (latlng.lng < -180 || latlng.lng > 180) return null;
+
+    const dyT = latlng.lat - targetLat;
+    const dxT = latlng.lng - targetLng;
+    const dTarget2 = dxT * dxT + dyT * dyT;
+
+    if (dTarget2 === 0) {
+      return 'exact';
+    }
+
+    return this.classifyCellNaive(
+      latlng,
+      station,
+      detectionCount,
+      dTarget2,
+      candidateStations
+    );
+  }
+
+  classifyCellNaive(latlng, station, detectionCount, dTarget2, positions) {
+    const sources = (positions && positions.length)
+      ? positions
+      : this.stationManager.stationPositions || [];
+
+    let closerCount = 0;
+    for (let i = 0; i < sources.length; i++) {
+      const sp = sources[i];
+      if (!sp) continue;
+      if (sp.index === station.index) continue;
+      const dy = latlng.lat - sp.lat;
+      const dx = latlng.lng - sp.lng;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < dTarget2) {
+        closerCount++;
+        if (closerCount >= detectionCount) break;
+      }
+    }
+
+    if (closerCount < detectionCount) {
+      return closerCount + 1 === detectionCount ? 'exact' : 'inner';
+    }
+
+    return null;
+  }
+
+  buildStationSubset(station, detectionCount) {
+    const positions = this.stationManager.stationPositions || [];
+    if (!positions.length) {
+      return [];
+    }
+
+    const mapSize = this.map.getSize();
+    if (!mapSize) {
+      return positions;
+    }
+
+    const corners = this.getMapReferencePoints(mapSize);
+    const keepPerCorner = this.getCullCount(detectionCount, positions.length);
+
+    if (keepPerCorner >= positions.length) {
+      return positions;
+    }
+
+    const keepIndices = new Set();
+    for (let i = 0; i < corners.length; i++) {
+      const nearest = this.findNearestIndices(corners[i], positions, keepPerCorner);
+      for (let j = 0; j < nearest.length; j++) {
+        keepIndices.add(nearest[j]);
+      }
+    }
+
+    keepIndices.add(station.index);
+
+    return Array.from(keepIndices).map((idx) => positions[idx]);
+  }
+
+  getCullCount(detectionCount, totalStations) {
+    const multiplier = (CONFIG.drawing && CONFIG.drawing.cullMultiplier) || 4;
+    const padding = (CONFIG.drawing && CONFIG.drawing.cullPadding) || 48;
+    const minStations = (CONFIG.drawing && CONFIG.drawing.cullMinStations) || 200;
+
+    const keep = Math.max(
+      detectionCount * multiplier,
+      detectionCount + padding,
+      minStations
+    );
+
+    return Math.min(totalStations, keep);
+  }
+
+  getMapReferencePoints(mapSize) {
+    const halfX = mapSize.x / 2;
+    const halfY = mapSize.y / 2;
+    const pixelPoints = [
+      [0, 0],
+      [mapSize.x, 0],
+      [0, mapSize.y],
+      [mapSize.x, mapSize.y],
+      [halfX, halfY],
+      [halfX, 0],
+      [halfX, mapSize.y],
+      [0, halfY],
+      [mapSize.x, halfY],
+    ];
+
+    return pixelPoints.map((pt) => this.map.containerPointToLatLng(pt));
+  }
+
+  findNearestIndices(cornerLatLng, positions, keepCount) {
+    if (keepCount <= 0 || keepCount >= positions.length) {
+      return positions.map((_, idx) => idx);
+    }
+
+    const best = [];
+    let worstIdx = -1;
+
+    for (let i = 0; i < positions.length; i++) {
+      const sp = positions[i];
+      const dist2 = this.distanceSquared(cornerLatLng, sp);
+
+      if (best.length < keepCount) {
+        best.push({ idx: i, dist2 });
+        if (best.length === keepCount) {
+          worstIdx = this.findWorstCandidateIndex(best);
+        }
+        continue;
+      }
+
+      if (dist2 >= best[worstIdx].dist2) {
+        continue;
+      }
+
+      best[worstIdx] = { idx: i, dist2 };
+      worstIdx = this.findWorstCandidateIndex(best);
+    }
+
+    return best.map((item) => item.idx);
+  }
+
+  findWorstCandidateIndex(candidates) {
+    if (!candidates.length) {
+      return -1;
+    }
+
+    let worstIdx = 0;
+    let worstValue = candidates[0].dist2;
+
+    for (let i = 1; i < candidates.length; i++) {
+      if (candidates[i].dist2 > worstValue) {
+        worstValue = candidates[i].dist2;
+        worstIdx = i;
+      }
+    }
+
+    return worstIdx;
+  }
+
+  distanceSquared(a, b) {
+    const dx = a.lng - b.lng;
+    const dy = a.lat - b.lat;
+    return dx * dx + dy * dy;
   }
 
   // 横方向の区間を一気に塗る

@@ -3,6 +3,7 @@
 
 class KDTree {
   constructor(points) {
+    this.size = Array.isArray(points) ? points.length : 0;
     this.root = this.buildTree(points, 0);
   }
 
@@ -36,6 +37,14 @@ class KDTree {
     return best;
   }
 
+  // 指定したインデックスの駅を除外して k 個の最近傍点を検索
+  kNearestExcept(targetLat, targetLng, k, skipIndex) {
+    if (k <= 0) return [];
+    const best = [];
+    this._kNearestExcept(this.root, targetLat, targetLng, k, best, skipIndex);
+    return best;
+  }
+
   _kNearest(node, targetLat, targetLng, k, best) {
     if (!node) return;
 
@@ -60,6 +69,31 @@ class KDTree {
     }
   }
 
+  _kNearestExcept(node, targetLat, targetLng, k, best, skipIndex) {
+    if (!node) return;
+
+    const p = node.point;
+    if (p.index !== skipIndex) {
+      const dx = targetLng - p.lng;
+      const dy = targetLat - p.lat;
+      const d2 = dx * dx + dy * dy;
+      this._insertBest(best, p, d2, k);
+    }
+
+    const axis = node.axis;
+    const diff = axis === 0 ? targetLng - p.lng : targetLat - p.lat;
+
+    const nearSide = diff <= 0 ? node.left : node.right;
+    const farSide = diff <= 0 ? node.right : node.left;
+
+    this._kNearestExcept(nearSide, targetLat, targetLng, k, best, skipIndex);
+
+    const bestDist2 = best.length < k ? Infinity : best[0].dist2;
+    if (diff * diff < bestDist2) {
+      this._kNearestExcept(farSide, targetLat, targetLng, k, best, skipIndex);
+    }
+  }
+
   // best[0] を「最も遠い」要素として保持する簡易 max-heap 的配列
   _insertBest(best, point, dist2, k) {
     if (best.length < k) {
@@ -70,4 +104,8 @@ class KDTree {
       best.sort((a, b) => b.dist2 - a.dist2);
     }
   }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = KDTree;
 }

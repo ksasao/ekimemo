@@ -29,7 +29,10 @@ const CONFIG = {
   drawing: {
     gridSizes: [16, 8, 4, 2], // 段階的に細かくするグリッドサイズ
     progressiveDelay: 500,     // 次の段階への遅延(ms)
-    frameTime: 16              // 1フレームの最大処理時間(ms)
+    frameTime: 16,             // 1フレームの最大処理時間(ms)
+    cullMultiplier: 4,         // コーナー単位で保持する駅数倍率
+    cullPadding: 48,           // 余分に保持する駅数
+    cullMinStations: 200       // 各コーナーで最低限保持する駅数
   },
 
   // 駅ドット表示設定
@@ -70,6 +73,10 @@ const CONFIG = {
   search: {
     maxCandidates: 200,
     defaultCandidates: 100
+  },
+
+  debug: {
+    logCullResult: false
   }
 };
 
