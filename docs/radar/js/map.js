@@ -29,6 +29,8 @@ class MapManager {
       zoom: CONFIG.map.zoom,
       zoomControl: true,
       preferCanvas: false,
+      zoomDelta: 0.5,
+      zoomSnap: 0.25,
     });
 
     L.tileLayer(CONFIG.map.tileUrl, {
