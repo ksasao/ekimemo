@@ -9,6 +9,7 @@ class DrawingManager {
     this.progressiveDrawTimer = null;
     this.currentDrawingGridSize = null;
     this.currentDrawingCancelled = false;
+    this.activeStations = null; // カリング済みの駅リストを保持
   }
 
   // オーバーレイレイヤーを設定
@@ -20,6 +21,11 @@ class DrawingManager {
   drawOverlay(station, detectionCount) {
     this.cancelProgressiveDraw();
     this.currentDrawingCancelled = false;
+    
+    // 最初の描画（最も荒いグリッド）の前に、画面範囲に基づいて有効な駅を計算する
+    // これにより、画面外にあっても画面内の判定に影響を与える駅を漏らさず、かつ不要な駅を除外できる
+    this.calculateActiveStations(station, detectionCount);
+    
     this.drawOverlayWithGridSize(station, detectionCount, CONFIG.drawing.gridSizes[0]);
   }
 
@@ -32,6 +38,87 @@ class DrawingManager {
     this.currentDrawingGridSize = null;
     this.currentDrawingCancelled = true;
     this.newOverlayLayer = null;
+    // activeStations はクリアしない（同じ駅・同じ条件での再描画の可能性もあるが、
+    // drawOverlayが呼ばれるたびに再計算されるので、ここでクリアしても問題ない。
+    // メモリ解放のためにクリアしておくのが無難）
+    this.activeStations = null;
+  }
+
+  // 画面範囲に基づいて有効な駅を計算（4隅判定によるカリング）
+  calculateActiveStations(targetStation, detectionCount) {
+    const positions = this.stationManager.stationPositions || [];
+    if (!positions.length || !targetStation) {
+      this.activeStations = positions;
+      return;
+    }
+
+    const mapSize = this.map.getSize();
+    if (!mapSize.x || !mapSize.y) {
+      this.activeStations = positions;
+      return;
+    }
+
+    // 最も荒いグリッドサイズ分だけバッファを持たせる
+    // これにより、画面端のグリッドセル中心が画面外にある場合もカバーする
+    const buffer = CONFIG.drawing.gridSizes[0] || 32;
+    
+    // 画面の4隅（+バッファ）の座標を取得
+    const corners = [
+      this.map.containerPointToLatLng([-buffer, -buffer]),
+      this.map.containerPointToLatLng([mapSize.x + buffer, -buffer]),
+      this.map.containerPointToLatLng([-buffer, mapSize.y + buffer]),
+      this.map.containerPointToLatLng([mapSize.x + buffer, mapSize.y + buffer])
+    ];
+
+    const active = [];
+    const targetLat = targetStation.lat;
+    const targetLng = targetStation.lng;
+
+    // 各コーナーからターゲット駅までの距離の二乗を計算しておく
+    const distToTarget = corners.map(c => {
+      const dy = c.lat - targetLat;
+      const dx = c.lng - targetLng;
+      return dx * dx + dy * dy;
+    });
+
+    for (let i = 0; i < positions.length; i++) {
+      const s = positions[i];
+      
+      // ターゲット駅自身は常に含める
+      if (s.index === targetStation.index) {
+        active.push(s);
+        continue;
+      }
+
+      // 4隅すべてにおいて、ターゲット駅よりも遠いかどうかをチェック
+      // もし4隅すべてで dist(Corner, S) > dist(Corner, Target) ならば、
+      // 画面内のどの点においても S は Target より遠い（ボロノイ領域の凸性より）。
+      // その場合、S は「Targetより近い駅」のカウントに寄与しないため除外可能。
+      
+      let potentiallyCloser = false;
+      for (let j = 0; j < 4; j++) {
+        const dy = corners[j].lat - s.lat;
+        const dx = corners[j].lng - s.lng;
+        const d2 = dx * dx + dy * dy;
+        
+        if (d2 < distToTarget[j]) {
+          potentiallyCloser = true;
+          break;
+        }
+      }
+
+      if (potentiallyCloser) {
+        active.push(s);
+      }
+    }
+
+    this.activeStations = active;
+    
+    if (CONFIG.debug && CONFIG.debug.logCullResult) {
+      console.log(
+        `[Drawing] Active stations calculated: ${active.length} / ${positions.length}`
+      );
+    }
   }
 
   // 指定されたグリッドサイズで描画
@@ -51,18 +138,9 @@ class DrawingManager {
     const width = mapSize.x;
     const height = mapSize.y;
 
-    const stationSubset = this.buildStationSubset(station, n);
-    const requiredSize = Math.min(this.stationManager.stationPositions.length, n + 1);
-    const classificationStations =
-      stationSubset.length >= requiredSize && stationSubset.length > 0
-        ? stationSubset
-        : this.stationManager.stationPositions;
-
-    if (CONFIG.debug && CONFIG.debug.logCullResult) {
-      console.log(
-        `[Drawing] culled to ${classificationStations.length} stations (n=${n}, total=${this.stationManager.stationPositions.length})`
-      );
-    }
+    // 事前に計算した activeStations を使用する
+    // もし何らかの理由で activeStations がなければ全駅を使用（安全策）
+    const classificationStations = this.activeStations || this.stationManager.stationPositions;
 
     let currentY = 0;
 
@@ -182,123 +260,7 @@ class DrawingManager {
     return null;
   }
 
-  buildStationSubset(station, detectionCount) {
-    const positions = this.stationManager.stationPositions || [];
-    if (!positions.length) {
-      return [];
-    }
 
-    const mapSize = this.map.getSize();
-    if (!mapSize) {
-      return positions;
-    }
-
-    const corners = this.getMapReferencePoints(mapSize);
-    const keepPerCorner = this.getCullCount(detectionCount, positions.length);
-
-    if (keepPerCorner >= positions.length) {
-      return positions;
-    }
-
-    const keepIndices = new Set();
-    for (let i = 0; i < corners.length; i++) {
-      const nearest = this.findNearestIndices(corners[i], positions, keepPerCorner);
-      for (let j = 0; j < nearest.length; j++) {
-        keepIndices.add(nearest[j]);
-      }
-    }
-
-    keepIndices.add(station.index);
-
-    return Array.from(keepIndices).map((idx) => positions[idx]);
-  }
-
-  getCullCount(detectionCount, totalStations) {
-    const multiplier = (CONFIG.drawing && CONFIG.drawing.cullMultiplier) || 4;
-    const padding = (CONFIG.drawing && CONFIG.drawing.cullPadding) || 48;
-    const minStations = (CONFIG.drawing && CONFIG.drawing.cullMinStations) || 200;
-
-    const keep = Math.max(
-      detectionCount * multiplier,
-      detectionCount + padding,
-      minStations
-    );
-
-    return Math.min(totalStations, keep);
-  }
-
-  getMapReferencePoints(mapSize) {
-    const halfX = mapSize.x / 2;
-    const halfY = mapSize.y / 2;
-    const pixelPoints = [
-      [0, 0],
-      [mapSize.x, 0],
-      [0, mapSize.y],
-      [mapSize.x, mapSize.y],
-      [halfX, halfY],
-      [halfX, 0],
-      [halfX, mapSize.y],
-      [0, halfY],
-      [mapSize.x, halfY],
-    ];
-
-    return pixelPoints.map((pt) => this.map.containerPointToLatLng(pt));
-  }
-
-  findNearestIndices(cornerLatLng, positions, keepCount) {
-    if (keepCount <= 0 || keepCount >= positions.length) {
-      return positions.map((_, idx) => idx);
-    }
-
-    const best = [];
-    let worstIdx = -1;
-
-    for (let i = 0; i < positions.length; i++) {
-      const sp = positions[i];
-      const dist2 = this.distanceSquared(cornerLatLng, sp);
-
-      if (best.length < keepCount) {
-        best.push({ idx: i, dist2 });
-        if (best.length === keepCount) {
-          worstIdx = this.findWorstCandidateIndex(best);
-        }
-        continue;
-      }
-
-      if (dist2 >= best[worstIdx].dist2) {
-        continue;
-      }
-
-      best[worstIdx] = { idx: i, dist2 };
-      worstIdx = this.findWorstCandidateIndex(best);
-    }
-
-    return best.map((item) => item.idx);
-  }
-
-  findWorstCandidateIndex(candidates) {
-    if (!candidates.length) {
-      return -1;
-    }
-
-    let worstIdx = 0;
-    let worstValue = candidates[0].dist2;
-
-    for (let i = 1; i < candidates.length; i++) {
-      if (candidates[i].dist2 > worstValue) {
-        worstValue = candidates[i].dist2;
-        worstIdx = i;
-      }
-    }
-
-    return worstIdx;
-  }
-
-  distanceSquared(a, b) {
-    const dx = a.lng - b.lng;
-    const dy = a.lat - b.lat;
-    return dx * dx + dy * dy;
-  }
 
   // 横方向の区間を一気に塗る
   addGridRunRect(x0, y0, x1, gridPx, type) {
