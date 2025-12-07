@@ -7,7 +7,9 @@ const CONFIG = {
     zoom: 11,
     maxZoom: 19,
     tileUrl: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors / 駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank" rel="noopener noreferrer">駅データ</a> を利用しています'
+    attribution: '&copy; OpenStreetMap contributors / 駅情報は <a href="https://github.com/Seo-4d696b75/station_database/blob/main/README.md" target="_blank" rel="noopener noreferrer">駅データ</a> を利用しています',
+    overlayFitPaddingMeters: 800,   // オーバーレイ全体を収める際に加える距離
+    overlayFitMinRadiusMeters: 2000 // 駅周辺を表示する際の最小半径
   },
 
   // レイヤーのz-index

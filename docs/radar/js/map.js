@@ -274,4 +274,38 @@ class MapManager {
     if (this.searchPanTimer) clearTimeout(this.searchPanTimer);
     this.searchPanTimer = setTimeout(callback, CONFIG.debounce.searchPan);
   }
+
+  // オーバーレイ領域が画面内に収まるようにズーム・中心を調整
+  fitOverlayToStation(station, detectionCount) {
+    if (!station || !this.map) {
+      return;
+    }
+
+    const center = L.latLng(station.lat, station.lng);
+    const count = Math.max(1, Number(detectionCount) || 1);
+    const neighbors = this.stationManager.getNearestStations(station, count) || [];
+
+    let maxDistance = 0;
+    for (let i = 0; i < neighbors.length; i++) {
+      const neighbor = neighbors[i];
+      if (!neighbor) continue;
+      const dist = this.map.distance(center, L.latLng(neighbor.lat, neighbor.lng));
+      if (Number.isFinite(dist) && dist > maxDistance) {
+        maxDistance = dist;
+      }
+    }
+
+    const paddingMeters = CONFIG.map.overlayFitPaddingMeters ?? 800;
+    const minRadius = CONFIG.map.overlayFitMinRadiusMeters ?? 2000;
+    let radius = Math.max(minRadius, maxDistance + paddingMeters);
+    if (!Number.isFinite(radius) || radius <= 0) {
+      radius = minRadius;
+    }
+
+    const bounds = center.toBounds(radius * 2);
+    this.map.fitBounds(bounds, {
+      padding: [40, 40],
+      animate: true,
+    });
+  }
 }

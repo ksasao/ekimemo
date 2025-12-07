@@ -85,16 +85,19 @@ class RadarApp {
       },
       onStationSelect: (station) => {
         this.mapManager.placeStationMarker(station, true);
+        this.fitMapToOverlay();
         this.locationManager.refreshLocationRank();
       },
       onDetectionCountChange: () => {
         this.mapManager.scheduleParamRedraw(() => {
           this.redrawOverlay();
           this.locationManager.refreshLocationRank();
+          this.fitMapToOverlay();
         });
       },
       onDrawButtonClick: (station) => {
         this.mapManager.placeStationMarker(station, true);
+        this.fitMapToOverlay();
         this.locationManager.refreshLocationRank();
       }
     });
@@ -131,6 +134,7 @@ class RadarApp {
     if (station) {
       this.mapManager.placeStationMarker(station, true);
       this.redrawOverlayAndStations();
+      this.fitMapToOverlay();
       this.locationManager.refreshLocationRank();
     }
   }
@@ -164,7 +168,22 @@ class RadarApp {
       this.mapManager.placeStationMarker(station, true);
       this.redrawOverlayAndStations();
       this.locationManager.refreshLocationRank();
+      this.fitMapToOverlay();
     }
+  }
+
+  fitMapToOverlay() {
+    if (!this.mapManager || !this.uiManager) {
+      return;
+    }
+
+    const station = this.uiManager.getSelectedStation();
+    if (!station) {
+      return;
+    }
+
+    const detectionCount = this.uiManager.getDetectionCount();
+    this.mapManager.fitOverlayToStation(station, detectionCount);
   }
 }
 

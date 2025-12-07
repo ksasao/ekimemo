@@ -120,6 +120,25 @@ class StationManager {
       .slice(0, CONFIG.search.maxCandidates);
   }
 
+  // 指定した駅から近い順に最大count件の駅を取得（自身は除外）
+  getNearestStations(station, count) {
+    if (!station || !this.kdTree || !Array.isArray(this.stationPositions)) {
+      return [];
+    }
+
+    const maxCount = Math.min(Math.max(0, Number(count) || 0), this.stationPositions.length - 1);
+    if (maxCount <= 0) {
+      return [];
+    }
+
+    const results = this.kdTree.kNearestExcept(station.lat, station.lng, maxCount, station.index);
+    if (!results || !results.length) {
+      return [];
+    }
+
+    return results.map((entry) => entry.point);
+  }
+
   // 路線名を取得
   getLineNames(lineCodes) {
     if (!lineCodes || lineCodes.length === 0) {
