@@ -139,6 +139,33 @@ class StationManager {
     return results.map((entry) => entry.point);
   }
 
+  // 任意の座標から距離が近い順に駅を取得
+  getNearestStationsByLatLng(latlng, count) {
+    if (!latlng || !Array.isArray(this.stationPositions) || !this.stationPositions.length) {
+      return new Map();
+    }
+
+    const limit = Math.min(Math.max(0, count || 0), this.stationPositions.length);
+    if (limit <= 0) {
+      return new Map();
+    }
+
+    const distances = this.stationPositions.map((station) => {
+      const dist2 = this.distanceSquaredLatLng(latlng[0], latlng[1], station.lat, station.lng);
+      return { station, dist2 };
+    });
+
+    distances.sort((a, b) => a.dist2 - b.dist2);
+
+    const result = new Map();
+    for (let i = 0; i < limit && i < distances.length; i++) {
+      const entry = distances[i];
+      result.set(entry.station.index, { rank: i + 1, dist2: entry.dist2 });
+    }
+
+    return result;
+  }
+
   // 選択中の駅を起点とした際の順位（距離が近い順）を取得
   getStationRankFrom(baseStation, targetStation) {
     if (!baseStation || !targetStation || !Array.isArray(this.stationPositions)) {

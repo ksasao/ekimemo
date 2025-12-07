@@ -190,17 +190,23 @@ class MapManager {
     const selectedStation = this.uiManager ? this.uiManager.getSelectedStation() : null;
     const hasLocation = this.locationManager && this.locationManager.isTracking();
     const locationLatLng = hasLocation ? this.locationManager.getLastLatLng() : null;
+    const detectionCount = this.uiManager ? this.uiManager.getDetectionCount() : null;
+    const highlightRanks = hasLocation && locationLatLng && zoom > CONFIG.stationDots.minZoom
+      ? this.stationManager.getNearestStationsByLatLng(locationLatLng, Math.max(1, detectionCount || 1))
+      : new Map();
 
     // 駅ドットを表示
     this.stationManager.stationPositions.forEach((s, idx) => {
       if (idx === currentStationIndex) return;
       
       if (bounds.contains([s.lat, s.lng])) {
+        const rankInfo = highlightRanks.get(s.index);
+        const isHighlighted = Boolean(rankInfo);
         const circle = L.circleMarker([s.lat, s.lng], {
           radius: 9,
-          color: '#22AA22',
+          color: isHighlighted ? '#FF8800' : '#22AA22',
           weight: 3,
-          fillColor: '#66EE66',
+          fillColor: isHighlighted ? '#FFAA33' : '#66EE66',
           fillOpacity: 1,
           pane: 'stationDotsPane',
           interactive: true
