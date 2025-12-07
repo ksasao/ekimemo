@@ -6,6 +6,7 @@ class UIManager {
     this.currentStationIndex = null;
     this.lastSearchValue = '';
     this.incrementalSearchTimerId = null;
+    this.currentLocationRank = null;
     
     // DOM要素
     this.searchInput = document.getElementById('searchInput');
@@ -143,14 +144,26 @@ class UIManager {
   // 選択中の駅ラベルを更新
   updateSelectedStationLabel() {
     const st = this.getSelectedStation();
-    this.selectedStationLabel.textContent = st
-      ? `選択中の駅: ${st.name}`
-      : '選択中の駅: なし';
+    if (!st) {
+      this.selectedStationLabel.textContent = '選択中の駅: なし';
+      return;
+    }
+
+    const rankText = this.currentLocationRank != null
+      ? ` (${this.currentLocationRank}駅目)`
+      : '';
+
+    this.selectedStationLabel.textContent = `選択中の駅: ${st.name}${rankText}`;
   }
 
   // 検知数を取得
   getDetectionCount() {
     return Number(this.nInput.value) || CONFIG.detection.default;
+  }
+
+  setLocationRank(rank) {
+    this.currentLocationRank = rank != null ? rank : null;
+    this.updateSelectedStationLabel();
   }
 
   // 駅を名前で選択

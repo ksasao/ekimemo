@@ -1,13 +1,16 @@
 // 位置情報取得管理
 
 class LocationManager {
-  constructor(map) {
+  constructor(map, stationManager, uiManager) {
     this.map = map;
+    this.stationManager = stationManager;
+    this.uiManager = uiManager;
     this.currentLocationMarker = null;
     this.currentLocationAccuracyCircle = null;
     this.locationUpdateTimer = null;
     this.isTrackingLocation = false;
     this.button = null;
+    this.lastLatLng = null;
   }
 
   // ボタンを設定
@@ -89,6 +92,11 @@ class LocationManager {
       this.map.removeLayer(this.currentLocationAccuracyCircle);
       this.currentLocationAccuracyCircle = null;
     }
+
+    this.lastLatLng = null;
+    if (this.uiManager) {
+      this.uiManager.setLocationRank(null);
+    }
   }
 
   // 現在地を更新
@@ -97,6 +105,7 @@ class LocationManager {
     const lng = position.coords.longitude;
     const accuracy = position.coords.accuracy;
     const latlng = [lat, lng];
+    this.lastLatLng = latlng;
 
     if (panToLocation) {
       this.map.panTo(latlng);
@@ -142,6 +151,7 @@ class LocationManager {
         </div>
       `);
     }
+    this.recalculateLocationRank();
   }
 
   // エラーハンドリング
@@ -159,5 +169,69 @@ class LocationManager {
         break;
     }
     alert(message);
+  }
+
+  refreshLocationRank() {
+    if (!this.isTrackingLocation) {
+      if (this.uiManager) {
+        this.uiManager.setLocationRank(null);
+      }
+      return;
+    }
+    this.recalculateLocationRank();
+  }
+
+  recalculateLocationRank() {
+    if (!this.isTrackingLocation || !this.lastLatLng || !this.stationManager || !this.uiManager) {
+      if (this.uiManager) {
+        this.uiManager.setLocationRank(null);
+      }
+      return;
+    }
+
+    const selectedStation = this.uiManager.getSelectedStation();
+    if (!selectedStation) {
+      this.uiManager.setLocationRank(null);
+      return;
+    }
+
+    const rank = this.computeSelectedStationRank(this.lastLatLng, selectedStation);
+    if (!rank) {
+      this.uiManager.setLocationRank(null);
+      return;
+    }
+
+    this.uiManager.setLocationRank(rank);
+  }
+
+  computeSelectedStationRank(latlng, selectedStation) {
+    if (!selectedStation || !this.stationManager || !this.stationManager.stationPositions.length) {
+      return null;
+    }
+
+    const targetDx = latlng[1] - selectedStation.lng;
+    const targetDy = latlng[0] - selectedStation.lat;
+    const targetDist2 = targetDx * targetDx + targetDy * targetDy;
+
+    if (targetDist2 === 0) {
+      return 1;
+    }
+
+    let closerCount = 0;
+    const positions = this.stationManager.stationPositions;
+    for (let i = 0; i < positions.length; i++) {
+      const station = positions[i];
+      if (station.index === selectedStation.index) {
+        continue;
+      }
+      const dx = latlng[1] - station.lng;
+      const dy = latlng[0] - station.lat;
+      const dist2 = dx * dx + dy * dy;
+      if (dist2 < targetDist2) {
+        closerCount++;
+      }
+    }
+
+    return closerCount + 1;
   }
 }

@@ -29,7 +29,7 @@ class RadarApp {
       this.drawingManager.setOverlayLayer(this.mapManager.overlayLayer);
 
       // 位置情報マネージャーを初期化
-      this.locationManager = new LocationManager(map);
+      this.locationManager = new LocationManager(map, this.stationManager, this.uiManager);
       this.locationManager.setButton(document.getElementById('currentLocationBtn'));
 
       // ボロノイマネージャーを初期化
@@ -85,14 +85,17 @@ class RadarApp {
       },
       onStationSelect: (station) => {
         this.mapManager.placeStationMarker(station, true);
+        this.locationManager.refreshLocationRank();
       },
       onDetectionCountChange: () => {
         this.mapManager.scheduleParamRedraw(() => {
           this.redrawOverlay();
+          this.locationManager.refreshLocationRank();
         });
       },
       onDrawButtonClick: (station) => {
         this.mapManager.placeStationMarker(station, true);
+        this.locationManager.refreshLocationRank();
       }
     });
 
@@ -128,6 +131,7 @@ class RadarApp {
     if (station) {
       this.mapManager.placeStationMarker(station, true);
       this.redrawOverlayAndStations();
+      this.locationManager.refreshLocationRank();
     }
   }
 
@@ -159,6 +163,7 @@ class RadarApp {
     if (station) {
       this.mapManager.placeStationMarker(station, true);
       this.redrawOverlayAndStations();
+      this.locationManager.refreshLocationRank();
     }
   }
 }
