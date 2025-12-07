@@ -139,6 +139,58 @@ class StationManager {
     return results.map((entry) => entry.point);
   }
 
+  // 選択中の駅を起点とした際の順位（距離が近い順）を取得
+  getStationRankFrom(baseStation, targetStation) {
+    if (!baseStation || !targetStation || !Array.isArray(this.stationPositions)) {
+      return null;
+    }
+
+    const baseIndex = baseStation.index;
+    const targetIndex = targetStation.index;
+    if (baseIndex === undefined || targetIndex === undefined) {
+      return null;
+    }
+
+    return this.getStationRankFromLatLng([baseStation.lat, baseStation.lng], targetStation, new Set([baseIndex]));
+  }
+
+  // 任意の緯度経度からターゲット駅までの順位（距離が近い順）を取得
+  getStationRankFromLatLng(latlng, targetStation, skipIndices = new Set()) {
+    if (!latlng || !targetStation || !this.stationPositions.length) {
+      return null;
+    }
+
+    const baseLat = latlng[0];
+    const baseLng = latlng[1];
+    const targetDist2 = this.distanceSquaredLatLng(baseLat, baseLng, targetStation.lat, targetStation.lng);
+
+    if (targetDist2 === 0) {
+      return 1;
+    }
+
+    let closerCount = 0;
+    for (let i = 0; i < this.stationPositions.length; i++) {
+      const candidate = this.stationPositions[i];
+      if (!candidate) continue;
+      if (candidate.index === targetStation.index || skipIndices.has(candidate.index)) {
+        continue;
+      }
+
+      const dist2 = this.distanceSquaredLatLng(baseLat, baseLng, candidate.lat, candidate.lng);
+      if (dist2 < targetDist2) {
+        closerCount++;
+      }
+    }
+
+    return closerCount + 1;
+  }
+
+  distanceSquaredLatLng(baseLat, baseLng, targetLat, targetLng) {
+    const dx = baseLng - targetLng;
+    const dy = baseLat - targetLat;
+    return dx * dx + dy * dy;
+  }
+
   // 路線名を取得
   getLineNames(lineCodes) {
     if (!lineCodes || lineCodes.length === 0) {

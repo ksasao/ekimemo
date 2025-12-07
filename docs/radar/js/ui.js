@@ -156,7 +156,7 @@ class UIManager {
     }
 
     const rankText = this.currentLocationRank != null
-      ? ` (${this.currentLocationRank}駅目)`
+      ? ` (現在地から${this.currentLocationRank.toLocaleString()}駅目)`
       : '';
 
     this.selectedStationLabel.textContent = `選択中の駅: ${st.name}${rankText}`;

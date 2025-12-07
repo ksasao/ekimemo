@@ -1,16 +1,18 @@
 // 位置情報取得管理
 
 class LocationManager {
-  constructor(map, stationManager, uiManager) {
+  constructor(map, stationManager, uiManager, mapManager) {
     this.map = map;
     this.stationManager = stationManager;
     this.uiManager = uiManager;
+    this.mapManager = mapManager || null;
     this.currentLocationMarker = null;
     this.currentLocationAccuracyCircle = null;
     this.locationUpdateTimer = null;
     this.isTrackingLocation = false;
     this.button = null;
     this.lastLatLng = null;
+    this.locationDotsRefreshed = false;
   }
 
   // ボタンを設定
@@ -34,6 +36,7 @@ class LocationManager {
 
     this.isTrackingLocation = true;
     this.button.classList.add('active');
+    this.locationDotsRefreshed = false;
 
     // 初回の位置取得（パンあり）
     navigator.geolocation.getCurrentPosition(
@@ -97,6 +100,8 @@ class LocationManager {
     if (this.uiManager) {
       this.uiManager.setLocationRank(null);
     }
+    this.refreshStationDots();
+    this.locationDotsRefreshed = false;
   }
 
   // 現在地を更新
@@ -152,6 +157,10 @@ class LocationManager {
       `);
     }
     this.recalculateLocationRank();
+    if (!this.locationDotsRefreshed) {
+      this.refreshStationDots();
+      this.locationDotsRefreshed = true;
+    }
   }
 
   // エラーハンドリング
@@ -205,33 +214,28 @@ class LocationManager {
   }
 
   computeSelectedStationRank(latlng, selectedStation) {
-    if (!selectedStation || !this.stationManager || !this.stationManager.stationPositions.length) {
+    if (!selectedStation || !this.stationManager) {
       return null;
     }
 
-    const targetDx = latlng[1] - selectedStation.lng;
-    const targetDy = latlng[0] - selectedStation.lat;
-    const targetDist2 = targetDx * targetDx + targetDy * targetDy;
+    return this.stationManager.getStationRankFromLatLng(latlng, selectedStation);
+  }
 
-    if (targetDist2 === 0) {
-      return 1;
+  getLastLatLng() {
+    return this.lastLatLng;
+  }
+
+  isTracking() {
+    return this.isTrackingLocation;
+  }
+
+  refreshStationDots() {
+    if (!this.mapManager || !this.uiManager || !this.mapManager.updateStationDots) {
+      return;
     }
-
-    let closerCount = 0;
-    const positions = this.stationManager.stationPositions;
-    for (let i = 0; i < positions.length; i++) {
-      const station = positions[i];
-      if (station.index === selectedStation.index) {
-        continue;
-      }
-      const dx = latlng[1] - station.lng;
-      const dy = latlng[0] - station.lat;
-      const dist2 = dx * dx + dy * dy;
-      if (dist2 < targetDist2) {
-        closerCount++;
-      }
-    }
-
-    return closerCount + 1;
+    const currentIndex = typeof this.uiManager.getCurrentStationIndex === 'function'
+      ? this.uiManager.getCurrentStationIndex()
+      : null;
+    this.mapManager.updateStationDots(currentIndex);
   }
 }

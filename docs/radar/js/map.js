@@ -1,19 +1,25 @@
 // マップ管理
 
 class MapManager {
-  constructor(stationManager) {
+  constructor(stationManager, uiManager) {
     this.stationManager = stationManager;
+    this.uiManager = uiManager;
     this.map = null;
     this.overlayLayer = null;
     this.stationDotsLayer = null;
     this.stationMarker = null;
     this.stationMarkerLabel = null;
     this.isUserInteracting = false;
+    this.locationManager = null;
     
     // デバウンス用タイマー
     this.searchPanTimer = null;
     this.mapRedrawTimer = null;
     this.paramRedrawTimer = null;
+  }
+
+  setLocationManager(locationManager) {
+    this.locationManager = locationManager;
   }
 
   // マップを初期化
@@ -58,6 +64,7 @@ class MapManager {
 
     this.overlayLayer = L.layerGroup().addTo(this.map);
     this.stationDotsLayer = L.layerGroup().addTo(this.map);
+    this.lastUserOpenedStationIndex = null;
 
     return this.map;
   }
@@ -66,6 +73,7 @@ class MapManager {
   setupEventListeners(onMoveStart, onMoveEnd) {
     this.map.on('movestart zoomstart', () => {
       this.isUserInteracting = true;
+      this.lastUserOpenedStationIndex = null;
       if (this.searchPanTimer) {
         clearTimeout(this.searchPanTimer);
         this.searchPanTimer = null;
@@ -156,6 +164,8 @@ class MapManager {
 
   // 画面内の駅ドットを更新
   updateStationDots(currentStationIndex) {
+    const popupStationIndex = this.lastUserOpenedStationIndex;
+
     this.stationDotsLayer.clearLayers();
     
     const bounds = this.map.getBounds();
@@ -177,6 +187,10 @@ class MapManager {
     
     const shouldShowLabels = showLabels && visibleStationCount < CONFIG.stationDots.maxLabelCount;
     
+    const selectedStation = this.uiManager ? this.uiManager.getSelectedStation() : null;
+    const hasLocation = this.locationManager && this.locationManager.isTracking();
+    const locationLatLng = hasLocation ? this.locationManager.getLastLatLng() : null;
+
     // 駅ドットを表示
     this.stationManager.stationPositions.forEach((s, idx) => {
       if (idx === currentStationIndex) return;
@@ -191,15 +205,23 @@ class MapManager {
           pane: 'stationDotsPane',
           interactive: true
         });
+        circle.stationIndex = s.index;
         
         const prefectureName = PREFECTURE_NAMES[s.prefecture] || '不明';
         const linesHTML = this.stationManager.getLineNamesHTML(s.lines);
+          const locationRankForStation = locationLatLng
+            ? this.stationManager.getStationRankFromLatLng(locationLatLng, s)
+            : null;
+          const locationRankHTML = locationRankForStation
+            ? `<div style="font-size: 13px; color: #0b5394; font-weight: 600; margin-bottom: 4px;">現在地から<span style="font-size: 15px;">${locationRankForStation.toLocaleString()}</span>駅目</div>`
+            : '';
         const popupContent = `
           <div style="font-family: system-ui, sans-serif; min-width: 150px;">
             <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #222;">${s.name}</div>
             <div style="font-size: 13px; color: #666; margin-bottom: 6px;">${s.name_kana}</div>
             <div style="font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px; margin-bottom: 4px;">${prefectureName}</div>
             ${linesHTML}
+              ${locationRankHTML}
             <div style="margin-top: 8px;">
               <a href="#" onclick="window.app.selectStationByName('${s.name.replace(/'/g, "\\'")}'); return false;" style="
                 display: inline-block;
@@ -220,6 +242,17 @@ class MapManager {
         circle.bindPopup(popupContent, {
           closeButton: true,
           offset: [0, -5]
+        });
+
+        circle.on('popupopen', () => {
+          this.lastUserOpenedStationIndex = circle.stationIndex;
+        });
+
+        circle.on('popupclose', () => {
+          const isMapZooming = this.map && (this.map._zooming || this.map._moving);
+          if (isMapZooming) {
+            this.lastUserOpenedStationIndex = null;
+          }
         });
         
         this.stationDotsLayer.addLayer(circle);
@@ -255,6 +288,15 @@ class MapManager {
         }
       }
     });
+
+    if (popupStationIndex != null) {
+      const matchingLayer = this.stationDotsLayer
+        .getLayers()
+        .find((layer) => typeof layer.stationIndex === 'number' && layer.stationIndex === popupStationIndex);
+      if (matchingLayer && matchingLayer.getPopup()) {
+        matchingLayer.openPopup();
+      }
+    }
   }
 
   // デバウンス付きマップ再描画スケジュール

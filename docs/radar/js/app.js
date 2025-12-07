@@ -21,7 +21,7 @@ class RadarApp {
       this.uiManager.initialize();
 
       // マップマネージャーを初期化
-      this.mapManager = new MapManager(this.stationManager);
+      this.mapManager = new MapManager(this.stationManager, this.uiManager);
       const map = this.mapManager.initialize();
 
       // 描画マネージャーを初期化
@@ -29,8 +29,9 @@ class RadarApp {
       this.drawingManager.setOverlayLayer(this.mapManager.overlayLayer);
 
       // 位置情報マネージャーを初期化
-      this.locationManager = new LocationManager(map, this.stationManager, this.uiManager);
+      this.locationManager = new LocationManager(map, this.stationManager, this.uiManager, this.mapManager);
       this.locationManager.setButton(document.getElementById('currentLocationBtn'));
+      this.mapManager.setLocationManager(this.locationManager);
 
       // ボロノイマネージャーを初期化
       this.voronoiManager = new VoronoiManager(map, this.stationManager);
