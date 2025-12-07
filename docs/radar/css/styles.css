@@ -85,6 +85,44 @@ body {
   min-width: 0;
 }
 
+.search-input-wrap {
+  position: relative;
+}
+
+.search-input-wrap input[type="text"] {
+  padding-right: 34px;
+}
+
+.input-clear-btn {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.input-clear-btn:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.search-input-wrap input[type="text"]:placeholder-shown + .input-clear-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
 input[type="text"],
 input[type="number"],
 select {

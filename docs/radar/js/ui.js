@@ -10,6 +10,7 @@ class UIManager {
     
     // DOM要素
     this.searchInput = document.getElementById('searchInput');
+    this.searchClearButton = document.getElementById('searchClearBtn');
     this.stationSelect = document.getElementById('stationSelect');
     this.nInput = document.getElementById('nInput');
     this.drawButton = document.getElementById('drawButton');
@@ -19,6 +20,11 @@ class UIManager {
   // UI要素を初期化
   initialize() {
     this.fillDetectionCountSelect();
+    if (this.searchClearButton) {
+      this.searchClearButton.addEventListener('click', () => {
+        this.handleSearchClear();
+      });
+    }
   }
 
   // 検知数セレクトボックスを設定
@@ -164,6 +170,25 @@ class UIManager {
   setLocationRank(rank) {
     this.currentLocationRank = rank != null ? rank : null;
     this.updateSelectedStationLabel();
+  }
+
+  handleSearchClear() {
+    if (!this.searchInput) return;
+
+    const hadValue = this.searchInput.value.length > 0;
+    this.searchInput.value = '';
+    this.lastSearchValue = '';
+
+    // 既存の入力ハンドラを再利用して状態をリセット
+    const event = new Event('input', { bubbles: true });
+    this.searchInput.dispatchEvent(event);
+
+    if (!hadValue && typeof this.searchInput.focus === 'function') {
+      this.searchInput.focus();
+    } else if (typeof this.searchInput.focus === 'function') {
+      // valueがあった場合もフォーカスを戻す
+      this.searchInput.focus();
+    }
   }
 
   // 駅を名前で選択
