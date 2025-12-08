@@ -37,8 +37,9 @@ const CONFIG = {
   // 駅ドット表示設定
   stationDots: {
     minZoom: 11,              // 駅ドットを表示する最小ズームレベル
-    labelZoom: 13,            // 駅名を表示する最小ズームレベル
-    maxLabelCount: 200        // 駅名を表示する最大駅数
+    labelZoom: 13,            // 駅名を表示する最小ズームレベル（密度判定と併用）
+    maxLabelCount: 200,       // 駅名を表示する最大駅数
+    labelDensityThreshold: 15  // 500x500px あたりの最大駅数
   },
 
   // デバウンス設定

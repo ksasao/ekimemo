@@ -177,7 +177,7 @@ class MapManager {
       return;
     }
     
-    const showLabels = zoom >= CONFIG.stationDots.labelZoom;
+    const mapSize = this.map.getSize();
     
     // 画面内の駅数をカウント
     let visibleStationCount = 0;
@@ -187,7 +187,12 @@ class MapManager {
       }
     });
     
-    const shouldShowLabels = showLabels && visibleStationCount < CONFIG.stationDots.maxLabelCount;
+    const areaPx = Math.max(1, mapSize.x * mapSize.y);
+    const referenceArea = 500 * 500;
+    const densityPerBlock = (visibleStationCount * referenceArea) / areaPx;
+    const densityThreshold = CONFIG.stationDots.labelDensityThreshold || 5;
+    const densityAllowsLabels = densityPerBlock <= densityThreshold;
+    const shouldShowLabels = densityAllowsLabels && visibleStationCount < CONFIG.stationDots.maxLabelCount;
     
     const selectedStation = this.uiManager ? this.uiManager.getSelectedStation() : null;
     const hasLocation = this.locationManager && this.locationManager.isTracking();
