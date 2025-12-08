@@ -113,8 +113,9 @@ class MapManager {
       </div>
     `;
 
-    const highlightRanks = this.currentHighlightRanks || new Map();
-    const isHighlightedByLocation = highlightRanks.has(station.index);
+    const trackingActive = this.locationManager && this.locationManager.isTracking();
+    const highlightRanks = trackingActive ? this.currentHighlightRanks || new Map() : new Map();
+    const isHighlightedByLocation = trackingActive && highlightRanks.has(station.index);
     const markerStyle = isHighlightedByLocation
       ? {
           radius: 10,
@@ -447,7 +448,8 @@ class MapManager {
     });
 
     if (this.stationMarker && typeof this.stationMarker.stationIndex === 'number') {
-      const isSelectedHighlighted = highlightRanks.has(this.stationMarker.stationIndex);
+      const trackingActive = this.locationManager && this.locationManager.isTracking();
+      const isSelectedHighlighted = trackingActive && highlightRanks.has(this.stationMarker.stationIndex);
       this.stationMarker.setStyle(
         isSelectedHighlighted
           ? {

@@ -101,6 +101,9 @@ class LocationManager {
       this.uiManager.setLocationRank(null);
     }
     this.refreshStationDots();
+    if (this.mapManager && typeof this.mapManager.refreshStationDotStyles === 'function') {
+      this.mapManager.refreshStationDotStyles();
+    }
     this.locationDotsRefreshed = false;
   }
 
