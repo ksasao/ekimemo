@@ -76,7 +76,8 @@ const CONFIG = {
   },
 
   debug: {
-    logCullResult: false
+    logCullResult: false,
+    enableClickLocation: false
   }
 };
 

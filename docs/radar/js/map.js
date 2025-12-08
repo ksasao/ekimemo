@@ -67,6 +67,9 @@ class MapManager {
     this.overlayLayer = L.layerGroup().addTo(this.map);
     this.stationDotsLayer = L.layerGroup().addTo(this.map);
     this.lastUserOpenedStationIndex = null;
+    this.currentHighlightRanks = new Map();
+
+    this.map.on('click', (event) => this.handleMapClick(event));
 
     return this.map;
   }
@@ -110,18 +113,35 @@ class MapManager {
       </div>
     `;
 
+    const highlightRanks = this.currentHighlightRanks || new Map();
+    const isHighlightedByLocation = highlightRanks.has(station.index);
+    const markerStyle = isHighlightedByLocation
+      ? {
+          radius: 10,
+          color: '#E6C200',
+          weight: 4,
+          fillColor: '#FFE45C',
+          fillOpacity: 0.95,
+        }
+      : {
+          radius: 10,
+          color: '#ff0000',
+          weight: 3,
+          fillColor: '#ff4d4d',
+          fillOpacity: 0.9,
+        };
+
     if (this.stationMarker) {
       this.stationMarker.setLatLng(latlng);
       this.stationMarker.setPopupContent(popupContent);
+      this.stationMarker.setStyle(markerStyle);
+      this.stationMarker.stationIndex = station.index;
     } else {
       this.stationMarker = L.circleMarker(latlng, {
-        radius: 10,
-        color: '#ff0000',
-        weight: 3,
-        fillColor: '#ff4d4d',
-        fillOpacity: 0.9,
+        ...markerStyle,
         pane: 'stationPane',
       }).addTo(this.map);
+      this.stationMarker.stationIndex = station.index;
       
       this.stationMarker.bindPopup(popupContent, {
         closeButton: true,
@@ -195,12 +215,11 @@ class MapManager {
     const shouldShowLabels = densityAllowsLabels && visibleStationCount < CONFIG.stationDots.maxLabelCount;
     
     const selectedStation = this.uiManager ? this.uiManager.getSelectedStation() : null;
-    const hasLocation = this.locationManager && this.locationManager.isTracking();
-    const locationLatLng = hasLocation ? this.locationManager.getLastLatLng() : null;
-    const detectionCount = this.uiManager ? this.uiManager.getDetectionCount() : null;
-    const highlightRanks = hasLocation && locationLatLng && zoom > CONFIG.stationDots.minZoom
-      ? this.stationManager.getNearestStationsByLatLng(locationLatLng, Math.max(1, detectionCount || 1))
-      : new Map();
+    const highlightRanks = this.computeHighlightRanks(zoom);
+    this.currentHighlightRanks = highlightRanks;
+    const locationLatLng = this.locationManager && this.locationManager.isTracking()
+      ? this.locationManager.getLastLatLng()
+      : null;
 
     // 駅ドットを表示
     this.stationManager.stationPositions.forEach((s, idx) => {
@@ -219,6 +238,7 @@ class MapManager {
           interactive: true
         });
         circle.stationIndex = s.index;
+        circle.isStationDot = true;
         
         const prefectureName = PREFECTURE_NAMES[s.prefecture] || '不明';
         const linesHTML = this.stationManager.getLineNamesHTML(s.lines);
@@ -297,6 +317,7 @@ class MapManager {
             pane: 'stationDotsPane',
             interactive: false
           });
+          label.isStationLabel = true;
           this.stationDotsLayer.addLayer(label);
         }
       }
@@ -328,6 +349,22 @@ class MapManager {
   scheduleSearchPan(callback) {
     if (this.searchPanTimer) clearTimeout(this.searchPanTimer);
     this.searchPanTimer = setTimeout(callback, CONFIG.debounce.searchPan);
+  }
+
+  handleMapClick(event) {
+    if (!CONFIG.debug || !CONFIG.debug.enableClickLocation) {
+      return;
+    }
+
+    if (!this.locationManager || !this.locationManager.isTracking()) {
+      return;
+    }
+
+    if (!event || !event.latlng) {
+      return;
+    }
+
+    this.locationManager.setManualLocation(event.latlng, { pan: false });
   }
 
   // オーバーレイ領域が画面内に収まるようにズーム・中心を調整
@@ -362,5 +399,73 @@ class MapManager {
       padding: [40, 40],
       animate: true,
     });
+  }
+
+  computeHighlightRanks(zoomOverride) {
+    if (!this.locationManager || !this.locationManager.isTracking()) {
+      return new Map();
+    }
+
+    const zoom = zoomOverride != null ? zoomOverride : this.map.getZoom();
+    if (zoom <= CONFIG.stationDots.minZoom) {
+      return new Map();
+    }
+
+    const locationLatLng = this.locationManager.getLastLatLng();
+    if (!locationLatLng) {
+      return new Map();
+    }
+
+    const detectionCount = this.uiManager ? this.uiManager.getDetectionCount() : 1;
+    return this.stationManager.getNearestStationsByLatLng(
+      locationLatLng,
+      Math.max(1, Number(detectionCount) || 1)
+    );
+  }
+
+  refreshStationDotStyles() {
+    if (!this.stationDotsLayer) {
+      return;
+    }
+
+    const highlightRanks = this.computeHighlightRanks();
+    this.currentHighlightRanks = highlightRanks;
+
+    this.stationDotsLayer.getLayers().forEach((layer) => {
+      if (!layer || !layer.isStationDot || typeof layer.stationIndex !== 'number') {
+        return;
+      }
+
+      const isHighlighted = highlightRanks.has(layer.stationIndex);
+      layer.setStyle({
+        radius: 9,
+        color: isHighlighted ? '#FF8800' : '#22AA22',
+        weight: 3,
+        fillColor: isHighlighted ? '#FFAA33' : '#66EE66',
+        fillOpacity: 1,
+      });
+    });
+
+    if (this.stationMarker && typeof this.stationMarker.stationIndex === 'number') {
+      const isSelectedHighlighted = highlightRanks.has(this.stationMarker.stationIndex);
+      this.stationMarker.setStyle(
+        isSelectedHighlighted
+          ? {
+              radius: 10,
+              color: '#E6C200',
+              weight: 4,
+              fillColor: '#FFE45C',
+              fillOpacity: 0.95,
+            }
+          : {
+              radius: 10,
+              color: '#ff0000',
+              weight: 3,
+              fillColor: '#ff4d4d',
+              fillOpacity: 0.9,
+            }
+      );
+      this.stationMarker.bringToFront();
+    }
   }
 }

@@ -106,23 +106,48 @@ class LocationManager {
 
   // 現在地を更新
   updateLocation(position, panToLocation) {
-    const lat = position.coords.latitude;
-    const lng = position.coords.longitude;
-    const accuracy = position.coords.accuracy;
-    const latlng = [lat, lng];
-    this.lastLatLng = latlng;
-
-    if (panToLocation) {
-      this.map.panTo(latlng);
+    if (!position || !position.coords) {
+      return;
     }
 
-    // 精度円を更新
+    const latlng = [position.coords.latitude, position.coords.longitude];
+    const accuracy = position.coords.accuracy;
+    this.applyLatLng(latlng, accuracy, panToLocation, false);
+  }
+
+  // デバッグ用に手動で位置を設定
+  setManualLocation(latlng, options = {}) {
+    if (!latlng) {
+      return;
+    }
+
+    const accuracy = options.accuracy != null ? options.accuracy : 50;
+    const panToLocation = Boolean(options.pan);
+    this.applyLatLng(latlng, accuracy, panToLocation, true);
+  }
+
+  applyLatLng(latlng, accuracy, panToLocation, forceRefreshDots) {
+    const normalized = Array.isArray(latlng)
+      ? [latlng[0], latlng[1]]
+      : [latlng.lat, latlng.lng];
+
+    if (!Number.isFinite(normalized[0]) || !Number.isFinite(normalized[1])) {
+      return;
+    }
+
+    const resolvedAccuracy = Number.isFinite(accuracy) ? accuracy : 50;
+    this.lastLatLng = normalized;
+
+    if (panToLocation) {
+      this.map.panTo(normalized);
+    }
+
     if (this.currentLocationAccuracyCircle) {
-      this.currentLocationAccuracyCircle.setLatLng(latlng);
-      this.currentLocationAccuracyCircle.setRadius(accuracy);
+      this.currentLocationAccuracyCircle.setLatLng(normalized);
+      this.currentLocationAccuracyCircle.setRadius(resolvedAccuracy);
     } else {
-      this.currentLocationAccuracyCircle = L.circle(latlng, {
-        radius: accuracy,
+      this.currentLocationAccuracyCircle = L.circle(normalized, {
+        radius: resolvedAccuracy,
         color: '#2196F3',
         fillColor: '#2196F3',
         fillOpacity: 0.15,
@@ -132,9 +157,8 @@ class LocationManager {
       }).addTo(this.map);
     }
 
-    // 現在地マーカーを更新
     if (this.currentLocationMarker) {
-      this.currentLocationMarker.setLatLng(latlng);
+      this.currentLocationMarker.setLatLng(normalized);
     } else {
       const pulsingIcon = L.divIcon({
         className: 'current-location-marker',
@@ -143,7 +167,7 @@ class LocationManager {
         iconAnchor: [8, 8]
       });
 
-      this.currentLocationMarker = L.marker(latlng, {
+      this.currentLocationMarker = L.marker(normalized, {
         icon: pulsingIcon,
         pane: 'stationPane',
         zIndexOffset: 1000
@@ -152,14 +176,22 @@ class LocationManager {
       this.currentLocationMarker.bindPopup(`
         <div style="font-family: system-ui, sans-serif;">
           <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">現在地</div>
-          <div style="font-size: 12px; color: #666;">精度: 約${Math.round(accuracy)}m</div>
+          <div style="font-size: 12px; color: #666;">精度: 約${Math.round(resolvedAccuracy)}m</div>
         </div>
       `);
     }
+
     this.recalculateLocationRank();
-    if (!this.locationDotsRefreshed) {
+
+    if (forceRefreshDots) {
+      this.refreshStationDots();
+    } else if (!this.locationDotsRefreshed) {
       this.refreshStationDots();
       this.locationDotsRefreshed = true;
+    }
+
+    if (this.mapManager && typeof this.mapManager.refreshStationDotStyles === 'function') {
+      this.mapManager.refreshStationDotStyles();
     }
   }
 
