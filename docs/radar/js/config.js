@@ -60,7 +60,7 @@ const CONFIG = {
 
   // 検知数の設定
   detection: {
-    min: 1,
+    min: 0,
     max: 50,
     default: 18,
     step: 1

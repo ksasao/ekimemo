@@ -21,12 +21,24 @@ class DrawingManager {
   drawOverlay(station, detectionCount) {
     this.cancelProgressiveDraw();
     this.currentDrawingCancelled = false;
+    const fallbackCount = CONFIG?.detection?.default ?? 0;
+    const parsedCount = Number(detectionCount);
+    const normalizedCount = Number.isFinite(parsedCount)
+      ? Math.max(0, parsedCount)
+      : Math.max(0, fallbackCount);
+
+    if (normalizedCount <= 0) {
+      if (this.overlayLayer) {
+        this.overlayLayer.clearLayers();
+      }
+      return;
+    }
     
     // 最初の描画（最も荒いグリッド）の前に、画面範囲に基づいて有効な駅を計算する
     // これにより、画面外にあっても画面内の判定に影響を与える駅を漏らさず、かつ不要な駅を除外できる
-    this.calculateActiveStations(station, detectionCount);
+    this.calculateActiveStations(station, normalizedCount);
     
-    this.drawOverlayWithGridSize(station, detectionCount, CONFIG.drawing.gridSizes[0]);
+    this.drawOverlayWithGridSize(station, normalizedCount, CONFIG.drawing.gridSizes[0]);
   }
 
   // 段階描画をキャンセル
@@ -125,7 +137,7 @@ class DrawingManager {
   drawOverlayWithGridSize(station, detectionCount, gridPx) {
     if (!station) return;
 
-    const n = Math.max(1, detectionCount);
+    const n = Math.max(0, detectionCount);
     this.currentDrawingGridSize = gridPx;
     this.currentDrawingCancelled = false;
 

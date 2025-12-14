@@ -375,7 +375,11 @@ class MapManager {
     }
 
     const center = L.latLng(station.lat, station.lng);
-    const count = Math.max(1, Number(detectionCount) || 1);
+    const fallbackCount = CONFIG?.detection?.default ?? 0;
+    const parsedCount = Number(detectionCount);
+    const count = Number.isFinite(parsedCount)
+      ? Math.max(0, parsedCount)
+      : Math.max(0, fallbackCount);
     const neighbors = this.stationManager.getNearestStations(station, count) || [];
 
     let maxDistance = 0;
@@ -417,11 +421,18 @@ class MapManager {
       return new Map();
     }
 
-    const detectionCount = this.uiManager ? this.uiManager.getDetectionCount() : 1;
-    return this.stationManager.getNearestStationsByLatLng(
-      locationLatLng,
-      Math.max(1, Number(detectionCount) || 1)
-    );
+    const fallbackCount = CONFIG?.detection?.default ?? 0;
+    const detectionCount = this.uiManager ? this.uiManager.getDetectionCount() : fallbackCount;
+    const parsedCount = Number(detectionCount);
+    const normalizedCount = Number.isFinite(parsedCount)
+      ? Math.max(0, parsedCount)
+      : Math.max(0, fallbackCount);
+
+    if (normalizedCount <= 0) {
+      return new Map();
+    }
+
+    return this.stationManager.getNearestStationsByLatLng(locationLatLng, normalizedCount);
   }
 
   refreshStationDotStyles() {

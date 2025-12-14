@@ -164,7 +164,17 @@ class UIManager {
 
   // 検知数を取得
   getDetectionCount() {
-    return Number(this.nInput.value) || CONFIG.detection.default;
+    if (!this.nInput) {
+      return CONFIG.detection.default;
+    }
+
+    const rawValue = Number(this.nInput.value);
+    if (!Number.isFinite(rawValue)) {
+      return CONFIG.detection.default;
+    }
+
+    const { min, max } = CONFIG.detection;
+    return Math.min(max, Math.max(min, rawValue));
   }
 
   setLocationRank(rank) {
