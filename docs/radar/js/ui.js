@@ -114,7 +114,10 @@ class UIManager {
   updateStationCandidates(query) {
     const list = this.stationManager.searchStations(query);
     
-    this.stationSelect.innerHTML = '';
+    // innerHTML の代わりに個別に子要素を削除（XSS対策）
+    while (this.stationSelect.firstChild) {
+      this.stationSelect.removeChild(this.stationSelect.firstChild);
+    }
     const fragment = document.createDocumentFragment();
 
     list.forEach((s) => {
@@ -214,7 +217,10 @@ class UIManager {
     if (!st) return null;
 
     this.searchInput.value = '';
-    this.stationSelect.innerHTML = '';
+    // innerHTML の代わりに個別に子要素を削除（XSS対策）
+    while (this.stationSelect.firstChild) {
+      this.stationSelect.removeChild(this.stationSelect.firstChild);
+    }
     const opt = document.createElement('option');
     opt.value = st.id;
     opt.textContent = st.name;

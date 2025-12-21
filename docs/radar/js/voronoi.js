@@ -12,10 +12,15 @@ class VoronoiManager {
   initialize() {
     this.voronoiLayer = L.layerGroup();
     
-    // localStorageから状態を復元
-    const savedState = localStorage.getItem('voronoiToggleState');
-    if (savedState !== null) {
-      this.isVisible = savedState === 'true';
+    // localStorageから状態を復元（サニタイズ処理を追加）
+    try {
+      const savedState = localStorage.getItem('voronoiToggleState');
+      if (savedState !== null && (savedState === 'true' || savedState === 'false')) {
+        this.isVisible = savedState === 'true';
+      }
+    } catch (e) {
+      // localStorageへのアクセスが拒否された場合は無視
+      console.warn('localStorage access denied:', e);
     }
     
     return this.voronoiLayer;
@@ -25,8 +30,13 @@ class VoronoiManager {
   toggleVisibility() {
     this.isVisible = !this.isVisible;
     
-    // localStorageに状態を保存
-    localStorage.setItem('voronoiToggleState', this.isVisible.toString());
+    // localStorageに状態を保存（エラーハンドリングを追加）
+    try {
+      localStorage.setItem('voronoiToggleState', this.isVisible.toString());
+    } catch (e) {
+      // localStorageへのアクセスが拒否された場合は無視
+      console.warn('localStorage access denied:', e);
+    }
     
     if (this.isVisible) {
       if (!this.voronoiLayer._map) {
