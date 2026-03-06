@@ -20,3 +20,5 @@ def calc_cool_time(distance_km, ct_max, ct_min):
 - [点滴石を穿つ Lv.4](station_Lv4.csv)
 
 ![Lv2の場合](lv2.png)
+
+※ 緯度・経度データは [駅データ](https://github.com/Seo-4d696b75/station_database/blob/main/README.md) を利用しています。
