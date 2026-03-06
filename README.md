@@ -18,3 +18,6 @@
 - [駅測 - レーダーマップ](https://ksasao.github.io/ekimemo/radar)
 - [駅メモ！世界の最寄り駅](https://ksasao.github.io/ekimemo/world)
 - [StaMap - 駅情報付き写真Viewer](https://ksasao.github.io/ekimemo/stamap)
+
+## 検証
+- [せいむのクールタイム計算式](https://github.com/ksasao/ekimemo/blob/main/docs/seimu/README.md)
