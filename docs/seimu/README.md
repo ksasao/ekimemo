@@ -13,7 +13,10 @@ def calc_cool_time(distance_km, ct_max, ct_min):
     x2 = capped_km / 1500.0
     return ct_min + dct * x2 + dct*x2*(1-x2)*(1+x2)/2 + dct*x2**2*(1-x2)**2/4 
 ```
-- [Lv1](station_Lv1.csv)
-- [Lv2](station_Lv2.csv)
-- [Lv3](station_Lv3.csv)
-- [Lv4](station_Lv4.csv)
+## 各駅のクールタイム計算値
+- [点滴石を穿つ Lv.1](station_Lv1.csv)
+- [点滴石を穿つ Lv.2](station_Lv2.csv)
+- [点滴石を穿つ Lv.3](station_Lv3.csv)
+- [点滴石を穿つ Lv.4](station_Lv4.csv)
+
+![Lv2の場合](lv2.png)
