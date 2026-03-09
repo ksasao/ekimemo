@@ -239,6 +239,8 @@ class RadarApp {
       alert('共有URLを作成できませんでした。駅を選択してください。');
       return;
     }
+    const selectedStation = this.uiManager ? this.uiManager.getSelectedStation() : null;
+    const shareText = selectedStation && selectedStation.name ? selectedStation.name : '';
 
     const isMobile = this.isMobileDevice();
 
@@ -246,8 +248,7 @@ class RadarApp {
       if (navigator.share && typeof navigator.share === 'function') {
         try {
           await navigator.share({
-            title: '駅測 - レーダーマップ',
-            text: 'マップ状態のシェアURLです',
+            text: shareText,
             url: shareUrl
           });
           return;
@@ -282,8 +283,7 @@ class RadarApp {
       if (navigator.share && typeof navigator.share === 'function') {
         try {
           await navigator.share({
-            title: '駅測 - レーダーマップ',
-            text: 'マップ状態のシェアURLです',
+            text: shareText,
             url: shareUrl
           });
           return;
