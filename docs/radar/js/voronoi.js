@@ -11,15 +11,16 @@ class VoronoiManager {
   // ボロノイレイヤーを初期化
   initialize() {
     this.voronoiLayer = L.layerGroup();
+    this.isVisible = !!(CONFIG && CONFIG.voronoi && CONFIG.voronoi.enabled);
     
-    // localStorageから状態を復元（サニタイズ処理を追加）
+    // localStorageから状態を復元（保存値があれば最優先）
     try {
       const savedState = localStorage.getItem('voronoiToggleState');
       if (savedState !== null && (savedState === 'true' || savedState === 'false')) {
         this.isVisible = savedState === 'true';
       }
     } catch (e) {
-      // localStorageへのアクセスが拒否された場合は無視
+      // localStorageへのアクセスが拒否された場合はCONFIGの初期値を使用
       console.warn('localStorage access denied:', e);
     }
     
