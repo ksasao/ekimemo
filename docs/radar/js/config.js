@@ -22,7 +22,7 @@ const CONFIG = {
 
   // ボロノイ図設定
   voronoi: {
-    enabled: false,           // デフォルトでは非表示
+    enabled: true,           // デフォルトでは表示
     lineWeight: 2,
     lineOpacity: 0.6
   },
@@ -62,7 +62,7 @@ const CONFIG = {
   detection: {
     min: 0,
     max: 50,
-    default: 18,
+    default: 16,
     step: 1
   },
 
