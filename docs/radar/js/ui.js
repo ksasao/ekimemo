@@ -14,6 +14,7 @@ class UIManager {
     this.stationSelect = document.getElementById('stationSelect');
     this.nInput = document.getElementById('nInput');
     this.drawButton = document.getElementById('drawButton');
+    this.shareStateButton = document.getElementById('shareStateBtn');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
   }
 
@@ -108,6 +109,15 @@ class UIManager {
         callbacks.onDrawButtonClick(st);
       }
     });
+
+    // 状態共有ボタン
+    if (this.shareStateButton) {
+      this.shareStateButton.addEventListener('click', () => {
+        if (callbacks.onShareStateClick) {
+          callbacks.onShareStateClick();
+        }
+      });
+    }
   }
 
   // 駅候補を更新
@@ -231,5 +241,46 @@ class UIManager {
     this.updateSelectedStationLabel();
 
     return st;
+  }
+
+  // 駅IDで駅を選択
+  selectStationById(stationId) {
+    const station = this.stationManager.getStationById(stationId);
+    if (!station || !this.stationSelect) {
+      return null;
+    }
+
+    while (this.stationSelect.firstChild) {
+      this.stationSelect.removeChild(this.stationSelect.firstChild);
+    }
+
+    const option = document.createElement('option');
+    option.value = station.id;
+    option.textContent = station.name;
+    this.stationSelect.appendChild(option);
+
+    this.stationSelect.value = station.id;
+    this.currentStationIndex = station.index;
+    this.updateSelectedStationLabel();
+
+    return station;
+  }
+
+  // 検知数を設定（範囲外はクランプ）
+  setDetectionCount(count) {
+    if (!this.nInput) {
+      return CONFIG.detection.default;
+    }
+
+    const numeric = Number(count);
+    if (!Number.isFinite(numeric)) {
+      this.nInput.value = String(CONFIG.detection.default);
+      return CONFIG.detection.default;
+    }
+
+    const { min, max } = CONFIG.detection;
+    const clamped = Math.min(max, Math.max(min, Math.round(numeric)));
+    this.nInput.value = String(clamped);
+    return clamped;
   }
 }

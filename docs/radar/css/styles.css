@@ -160,6 +160,35 @@ select:focus {
   transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s ease;
 }
 
+#shareStateBtn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.15s ease;
+}
+
+#shareStateBtn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 6px rgba(47, 128, 255, 0.2);
+}
+
+#shareStateBtn:active {
+  transform: translateY(1px);
+}
+
+#shareStateBtn:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+  cursor: default;
+}
+
 #drawButton:active {
   transform: translateY(1px);
   box-shadow: 0 1px 4px rgba(23, 93, 220, 0.35);
