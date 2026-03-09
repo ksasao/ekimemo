@@ -44,13 +44,16 @@ class RadarApp {
       this.restoreVoronoiState();
 
       // URL共有状態を安全に適用（適用後はURLを正規化）
+      const hasShareParams = this.hasShareStateParamsInUrl();
       const sharedState = this.parseSharedStateFromUrl();
       if (sharedState) {
         this.applySharedState(sharedState);
-        this.normalizeUrlWithoutState();
       } else {
         // 初期駅を設定
         this.selectInitialStation();
+      }
+      if (hasShareParams) {
+        this.normalizeUrlWithoutState();
       }
 
     } catch (error) {
@@ -362,6 +365,20 @@ class RadarApp {
     }
 
     return Object.keys(parsed).length > 0 ? parsed : null;
+  }
+
+  hasShareStateParamsInUrl() {
+    const search = window.location.search || '';
+    if (!search || search === '?') {
+      return false;
+    }
+
+    if (search.length > 4096) {
+      return true;
+    }
+
+    const params = new URLSearchParams(search);
+    return ['lat', 'lng', 'z', 'sid', 'n', 'v'].some((key) => params.has(key));
   }
 
   normalizeUrlWithoutState() {
