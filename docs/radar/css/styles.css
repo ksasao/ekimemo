@@ -34,6 +34,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: relative;
 }
 
 /* --- コントロールエリア --- */
@@ -48,6 +49,49 @@ body {
   z-index: 1000;
 }
 
+#controlsDrawerToggle,
+#controlsDrawerCloseBtn {
+  display: none;
+}
+
+#controlsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.controls-toggle-btn {
+  border: 1px solid rgba(47, 128, 255, 0.3);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-strong);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(23, 93, 220, 0.16);
+}
+
+.controls-toggle-inline {
+  margin-left: auto;
+  background: var(--accent-soft);
+}
+
+.controls-close-icon-btn {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-sub);
+  font-size: 36px;
+  font-weight: 500;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  line-height: 1;
+}
+
 #controls-inner {
   max-width: 720px;
   margin: 0 auto;
@@ -57,7 +101,7 @@ body {
 #controls-title {
   font-size: 13px;
   font-weight: 600;
-  margin: 0 0 4px;
+  margin: 0;
   color: var(--text-sub);
 }
 
@@ -303,4 +347,73 @@ select {
 
 .current-location-marker {
   animation: pulse 1.5s ease-in-out infinite;
+}
+
+@media (max-width: 639px) {
+  #map {
+    min-height: 100dvh;
+  }
+
+  #controlsDrawerToggle {
+    display: inline-flex;
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1300;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  #controlsDrawerCloseBtn {
+    display: inline-flex;
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    padding: 0;
+    margin: 0;
+    width: 44px;
+    height: 44px;
+    font-size: 34px;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  #controls-title {
+    padding-right: 56px;
+  }
+
+  #controls {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 8px);
+    left: 8px;
+    right: 8px;
+    z-index: 1200;
+    border-radius: 16px;
+    padding: 0;
+    transition: transform 0.24s ease, opacity 0.2s ease;
+    max-height: min(76dvh, 560px);
+    overflow: hidden;
+  }
+
+  #controls-inner {
+    max-height: min(76dvh, 560px);
+    overflow-y: auto;
+    padding: 10px 10px 8px;
+  }
+
+  #controls.is-collapsed-mobile {
+    transform: translateY(calc(-100% - 20px));
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #app.controls-open #controlsDrawerToggle {
+    display: none;
+  }
+
+  #app:not(.controls-open) #controlsDrawerCloseBtn {
+    display: none;
+  }
 }

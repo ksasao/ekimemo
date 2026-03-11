@@ -16,11 +16,18 @@ class UIManager {
     this.drawButton = document.getElementById('drawButton');
     this.shareStateButton = document.getElementById('shareStateBtn');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
+    this.appContainer = document.getElementById('app');
+    this.controlsContainer = document.getElementById('controls');
+    this.controlsDrawerToggle = document.getElementById('controlsDrawerToggle');
+    this.controlsDrawerCloseButton = document.getElementById('controlsDrawerCloseBtn');
+    this.mobileDrawerMediaQuery = window.matchMedia('(max-width: 639px)');
+    this.isMobileDrawerOpen = false;
   }
 
   // UI要素を初期化
   initialize() {
     this.fillDetectionCountSelect();
+    this.initializeMobileDrawer();
     if (this.searchClearButton) {
       this.searchClearButton.addEventListener('click', () => {
         this.handleSearchClear();
@@ -105,6 +112,7 @@ class UIManager {
       }
       this.currentStationIndex = st.index;
       this.updateSelectedStationLabel();
+      this.closeMobileDrawer();
       if (callbacks.onDrawButtonClick) {
         callbacks.onDrawButtonClick(st);
       }
@@ -282,5 +290,87 @@ class UIManager {
     const clamped = Math.min(max, Math.max(min, Math.round(numeric)));
     this.nInput.value = String(clamped);
     return clamped;
+  }
+
+  initializeMobileDrawer() {
+    if (!this.controlsContainer || !this.controlsDrawerToggle || !this.controlsDrawerCloseButton || !this.appContainer) {
+      return;
+    }
+
+    const syncByViewport = () => {
+      if (this.mobileDrawerMediaQuery.matches) {
+        this.closeMobileDrawer({ force: true, focusToggle: false });
+      } else {
+        this.isMobileDrawerOpen = true;
+        this.appContainer.classList.remove('controls-open');
+        this.controlsContainer.classList.remove('is-collapsed-mobile');
+        this.controlsDrawerToggle.setAttribute('aria-expanded', 'false');
+        this.controlsDrawerToggle.textContent = '条件を表示';
+        this.controlsDrawerToggle.setAttribute('aria-label', '条件を開く');
+        this.controlsDrawerCloseButton.setAttribute('aria-expanded', 'true');
+        this.controlsDrawerCloseButton.textContent = '×';
+        this.controlsDrawerCloseButton.setAttribute('aria-label', '条件を閉じる');
+      }
+    };
+
+    this.controlsDrawerToggle.addEventListener('click', () => {
+      if (!this.mobileDrawerMediaQuery.matches) return;
+
+      this.openMobileDrawer();
+    });
+
+    this.controlsDrawerCloseButton.addEventListener('click', () => {
+      this.closeMobileDrawer();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        this.closeMobileDrawer();
+      }
+    });
+
+    if (typeof this.mobileDrawerMediaQuery.addEventListener === 'function') {
+      this.mobileDrawerMediaQuery.addEventListener('change', syncByViewport);
+    } else {
+      this.mobileDrawerMediaQuery.addListener(syncByViewport);
+    }
+
+    syncByViewport();
+  }
+
+  openMobileDrawer() {
+    if (!this.mobileDrawerMediaQuery.matches) {
+      return;
+    }
+
+    this.isMobileDrawerOpen = true;
+    this.appContainer.classList.add('controls-open');
+    this.controlsContainer.classList.remove('is-collapsed-mobile');
+    this.controlsDrawerToggle.setAttribute('aria-expanded', 'true');
+    this.controlsDrawerToggle.textContent = '条件を表示';
+    this.controlsDrawerToggle.setAttribute('aria-label', '条件を開く');
+    this.controlsDrawerCloseButton.setAttribute('aria-expanded', 'true');
+    this.controlsDrawerCloseButton.textContent = '×';
+    this.controlsDrawerCloseButton.setAttribute('aria-label', '条件を閉じる');
+  }
+
+  closeMobileDrawer(options = {}) {
+    if (!this.mobileDrawerMediaQuery.matches && !options.force) {
+      return;
+    }
+
+    this.isMobileDrawerOpen = false;
+    this.appContainer.classList.remove('controls-open');
+    this.controlsContainer.classList.add('is-collapsed-mobile');
+    this.controlsDrawerToggle.setAttribute('aria-expanded', 'false');
+    this.controlsDrawerToggle.textContent = '条件を表示';
+    this.controlsDrawerToggle.setAttribute('aria-label', '条件を開く');
+    this.controlsDrawerCloseButton.setAttribute('aria-expanded', 'false');
+    this.controlsDrawerCloseButton.textContent = '×';
+    this.controlsDrawerCloseButton.setAttribute('aria-label', '条件を閉じる');
+
+    if (options.focusToggle && typeof this.controlsDrawerToggle.focus === 'function') {
+      this.controlsDrawerToggle.focus();
+    }
   }
 }

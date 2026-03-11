@@ -21,9 +21,14 @@
 
 <body>
   <div id="app">
+    <button id="controlsDrawerToggle" class="controls-toggle-btn controls-toggle-floating" type="button" aria-expanded="false" aria-controls="controls" aria-label="条件を開く">条件を表示</button>
+
     <div id="controls">
       <div id="controls-inner">
-        <p id="controls-title">指定した駅がレーダーで取得可能な範囲を描画します</p>
+        <div id="controlsHeader">
+          <p id="controls-title">指定した駅がレーダーで取得可能な範囲を描画します</p>
+          <button id="controlsDrawerCloseBtn" class="controls-toggle-btn controls-toggle-inline controls-close-icon-btn" type="button" aria-expanded="true" aria-controls="controls" aria-label="条件を閉じる">×</button>
+        </div>
 
         <div class="form-grid">
           <!-- 駅名検索 -->
