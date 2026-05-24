@@ -1,0 +1,2 @@
+# Required for KDTree acceleration in find_top50_pairs.py
+scipy>=1.10
