@@ -8,6 +8,7 @@ class RadarApp {
     this.drawingManager = null;
     this.uiManager = null;
     this.voronoiManager = null;
+    this.viewStateStorageKey = 'radarLastViewStateV1';
   }
 
   // アプリケーションを初期化
@@ -48,9 +49,15 @@ class RadarApp {
       const sharedState = this.parseSharedStateFromUrl();
       if (sharedState) {
         this.applySharedState(sharedState);
+        this.savePersistentViewState();
       } else {
-        // 初期駅を設定
-        this.selectInitialStation();
+        const savedState = this.loadPersistentViewState();
+        if (savedState) {
+          this.applySharedState(savedState);
+        } else {
+          // 初期駅を設定
+          this.selectInitialStation();
+        }
       }
       if (hasShareParams) {
         this.normalizeUrlWithoutState();
@@ -77,6 +84,7 @@ class RadarApp {
         this.mapManager.scheduleMapRedraw(() => {
           this.redrawOverlayAndStations();
           this.voronoiManager.update();
+          this.savePersistentViewState();
         });
       }
     );
@@ -98,6 +106,7 @@ class RadarApp {
         this.mapManager.placeStationMarker(station, true);
         this.fitMapToOverlay();
         this.locationManager.refreshLocationRank();
+        this.savePersistentViewState();
       },
       onDetectionCountChange: () => {
         this.mapManager.scheduleParamRedraw(() => {
@@ -110,6 +119,7 @@ class RadarApp {
         this.mapManager.placeStationMarker(station, true);
         this.fitMapToOverlay();
         this.locationManager.refreshLocationRank();
+        this.savePersistentViewState();
       },
       onShareStateClick: async () => {
         await this.copyShareUrlToClipboard();
@@ -150,6 +160,7 @@ class RadarApp {
       this.redrawOverlayAndStations();
       this.fitMapToOverlay();
       this.locationManager.refreshLocationRank();
+      this.savePersistentViewState();
     }
   }
 
@@ -183,6 +194,87 @@ class RadarApp {
       this.redrawOverlayAndStations();
       this.locationManager.refreshLocationRank();
       this.fitMapToOverlay();
+      this.savePersistentViewState();
+    }
+  }
+
+  buildPersistentViewState() {
+    if (!this.uiManager || !this.mapManager || !this.mapManager.map) {
+      return null;
+    }
+
+    const station = this.uiManager.getSelectedStation();
+    if (!station) {
+      return null;
+    }
+
+    const center = this.mapManager.map.getCenter();
+    const zoom = this.mapManager.map.getZoom();
+
+    return {
+      stationId: station.id,
+      mapView: {
+        lat: Number(center.lat),
+        lng: Number(center.lng),
+        zoom: Number(zoom)
+      }
+    };
+  }
+
+  savePersistentViewState() {
+    const state = this.buildPersistentViewState();
+    if (!state) {
+      return;
+    }
+
+    try {
+      localStorage.setItem(this.viewStateStorageKey, JSON.stringify(state));
+    } catch (e) {
+      console.warn('localStorage access denied:', e);
+    }
+  }
+
+  parsePersistentViewState(rawState) {
+    if (!rawState || typeof rawState !== 'object') {
+      return null;
+    }
+
+    const parsed = {};
+    const mapView = rawState.mapView;
+    if (mapView && typeof mapView === 'object') {
+      const lat = Number(mapView.lat);
+      const lng = Number(mapView.lng);
+      const zoom = Number(mapView.zoom);
+      if (
+        Number.isFinite(lat) && Number.isFinite(lng) && Number.isFinite(zoom) &&
+        lat >= -90 && lat <= 90 &&
+        lng >= -180 && lng <= 180 &&
+        zoom >= 0 && zoom <= CONFIG.map.maxZoom
+      ) {
+        parsed.mapView = { lat, lng, zoom };
+      }
+    }
+
+    const stationId = Number(rawState.stationId);
+    if (Number.isSafeInteger(stationId) && this.stationManager.getStationById(stationId)) {
+      parsed.stationId = stationId;
+    }
+
+    return Object.keys(parsed).length > 0 ? parsed : null;
+  }
+
+  loadPersistentViewState() {
+    try {
+      const saved = localStorage.getItem(this.viewStateStorageKey);
+      if (!saved || saved.length > 1024) {
+        return null;
+      }
+
+      const rawState = JSON.parse(saved);
+      return this.parsePersistentViewState(rawState);
+    } catch (e) {
+      console.warn('localStorage access denied:', e);
+      return null;
     }
   }
 
