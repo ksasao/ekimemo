@@ -210,9 +210,11 @@ class RadarApp {
 
     const center = this.mapManager.map.getCenter();
     const zoom = this.mapManager.map.getZoom();
+    const detectionCount = this.uiManager.getDetectionCount();
 
     return {
       stationId: station.id,
+      detectionCount,
       mapView: {
         lat: Number(center.lat),
         lng: Number(center.lng),
@@ -258,6 +260,11 @@ class RadarApp {
     const stationId = Number(rawState.stationId);
     if (Number.isSafeInteger(stationId) && this.stationManager.getStationById(stationId)) {
       parsed.stationId = stationId;
+    }
+
+    const detectionCount = Number(rawState.detectionCount);
+    if (Number.isSafeInteger(detectionCount)) {
+      parsed.detectionCount = Math.min(CONFIG.detection.max, Math.max(CONFIG.detection.min, detectionCount));
     }
 
     return Object.keys(parsed).length > 0 ? parsed : null;
