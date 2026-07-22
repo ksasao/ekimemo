@@ -155,14 +155,14 @@ class MapManager {
           radius: 10,
           color: '#E6C200',
           weight: 4,
-          fillColor: '#FFE45C',
+          fillColor: this.resolveStationFillColor(station.attr, '#FFE45C'),
           fillOpacity: 0.95,
         }
       : {
           radius: 10,
           color: '#ff0000',
           weight: 3,
-          fillColor: '#ff4d4d',
+          fillColor: this.resolveStationFillColor(station.attr, '#ff4d4d'),
           fillOpacity: 0.9,
         };
 
@@ -247,16 +247,19 @@ class MapManager {
       if (bounds.contains([s.lat, s.lng])) {
         const rankInfo = highlightRanks.get(s.index);
         const isHighlighted = Boolean(rankInfo);
+        const defaultFillColor = isHighlighted ? '#FFAA33' : '#66EE66';
+        const defaultStrokeColor = isHighlighted ? '#FF8800' : '#22AA22';
         const circle = L.circleMarker([s.lat, s.lng], {
           radius: 9,
-          color: isHighlighted ? '#FF8800' : '#22AA22',
+          color: this.resolveStationOutlineColor(s.attr, defaultStrokeColor, isHighlighted),
           weight: 3,
-          fillColor: isHighlighted ? '#FFAA33' : '#66EE66',
+          fillColor: this.resolveStationFillColor(s.attr, defaultFillColor),
           fillOpacity: 1,
           pane: 'stationDotsPane',
           interactive: true
         });
         circle.stationIndex = s.index;
+        circle.stationAttr = s.attr;
         circle.isStationDot = true;
         
         const popupContent = this.buildStationPopupContent(s, {
@@ -478,11 +481,13 @@ class MapManager {
       }
 
       const isHighlighted = highlightRanks.has(layer.stationIndex);
+      const defaultFillColor = isHighlighted ? '#FFAA33' : '#66EE66';
+      const defaultStrokeColor = isHighlighted ? '#FF8800' : '#22AA22';
       layer.setStyle({
         radius: 9,
-        color: isHighlighted ? '#FF8800' : '#22AA22',
+        color: this.resolveStationOutlineColor(layer.stationAttr, defaultStrokeColor, isHighlighted),
         weight: 3,
-        fillColor: isHighlighted ? '#FFAA33' : '#66EE66',
+        fillColor: this.resolveStationFillColor(layer.stationAttr, defaultFillColor),
         fillOpacity: 1,
       });
     });
@@ -490,20 +495,22 @@ class MapManager {
     if (this.stationMarker && typeof this.stationMarker.stationIndex === 'number') {
       const trackingActive = this.locationManager && this.locationManager.isTracking();
       const isSelectedHighlighted = trackingActive && highlightRanks.has(this.stationMarker.stationIndex);
+      const selectedStation = this.uiManager ? this.uiManager.getSelectedStation() : null;
+      const selectedAttr = selectedStation ? selectedStation.attr : 'unknown';
       this.stationMarker.setStyle(
         isSelectedHighlighted
           ? {
               radius: 10,
               color: '#E6C200',
               weight: 4,
-              fillColor: '#FFE45C',
+              fillColor: this.resolveStationFillColor(selectedAttr, '#FFE45C'),
               fillOpacity: 0.95,
             }
           : {
               radius: 10,
               color: '#ff0000',
               weight: 3,
-              fillColor: '#ff4d4d',
+              fillColor: this.resolveStationFillColor(selectedAttr, '#ff4d4d'),
               fillOpacity: 0.9,
             }
       );
@@ -693,5 +700,37 @@ class MapManager {
       .replace(/'/g, "\\'")
       .replace(/\r/g, '\\r')
       .replace(/\n/g, '\\n');
+  }
+
+  resolveStationFillColor(attr, fallbackFillColor) {
+    if (!this.isStationAttrColorEnabled()) {
+      return fallbackFillColor;
+    }
+
+    const key = this.normalizeStationAttr(attr);
+    const configuredColors = CONFIG?.stationDots?.attrFillColors || {};
+    return configuredColors[key] || configuredColors.unknown || '#9E9E9E';
+  }
+
+  resolveStationOutlineColor(attr, fallbackStrokeColor, isHighlightedByLocation) {
+    if (isHighlightedByLocation || !this.isStationAttrColorEnabled()) {
+      return fallbackStrokeColor;
+    }
+
+    const key = this.normalizeStationAttr(attr);
+    const configuredColors = CONFIG?.stationDots?.attrStrokeColors || {};
+    return configuredColors[key] || configuredColors.unknown || '#616161';
+  }
+
+  isStationAttrColorEnabled() {
+    return Boolean(this.uiManager && this.uiManager.isStationAttrColorEnabled && this.uiManager.isStationAttrColorEnabled());
+  }
+
+  normalizeStationAttr(attr) {
+    const normalized = typeof attr === 'string' ? attr.toLowerCase() : 'unknown';
+    if (normalized === 'eco' || normalized === 'cool' || normalized === 'heat') {
+      return normalized;
+    }
+    return 'unknown';
   }
 }
