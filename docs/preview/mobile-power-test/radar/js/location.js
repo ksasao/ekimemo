@@ -362,59 +362,8 @@ class LocationManager {
       this.uiManager.showNearestStationNotification(nearest.name);
     }
 
-    if (this.shouldVibrateNearestStationChange()) {
-      this.triggerNearestStationVibration();
-    }
-  }
-
-  shouldVibrateNearestStationChange() {
-    if (!this.uiManager || typeof this.uiManager.isNearestStationVibrationEnabled !== 'function') {
-      return false;
-    }
-    if (!this.uiManager.isNearestStationVibrationEnabled()) {
-      return false;
-    }
-    if (typeof navigator.vibrate !== 'function') {
-      return false;
-    }
-    return this.isAndroidDevice();
-  }
-
-  isAndroidDevice() {
-    if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
-      if (/android/i.test(navigator.userAgentData.platform)) {
-        return true;
-      }
-    }
-    const ua = navigator.userAgent || '';
-    return /android/i.test(ua);
-  }
-
-  triggerNearestStationVibration() {
-    if (typeof navigator.vibrate !== 'function') {
-      return;
-    }
-
-    try {
-      const patterns = [
-        [120, 80, 120],
-        180,
-        [70, 50, 70, 50, 70]
-      ];
-
-      let accepted = false;
-      for (let i = 0; i < patterns.length; i++) {
-        if (navigator.vibrate(patterns[i])) {
-          accepted = true;
-          break;
-        }
-      }
-
-      if (!accepted) {
-        console.warn('Vibration request was not accepted by the browser/device settings.');
-      }
-    } catch (e) {
-      console.warn('vibration failed:', e);
+    if (this.uiManager && typeof this.uiManager.showNearestStationBrowserNotification === 'function') {
+      this.uiManager.showNearestStationBrowserNotification(nearest.name);
     }
   }
 
