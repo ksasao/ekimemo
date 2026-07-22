@@ -58,12 +58,6 @@ const CONFIG = {
     maximumAge: 0
   },
 
-  nearestStationNotification: {
-    enabledByDefault: true,
-    vibrationEnabledByDefault: true,
-    displayDurationMs: 5000
-  },
-
   // 検知数の設定
   detection: {
     min: 0,

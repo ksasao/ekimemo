@@ -15,12 +15,7 @@ class UIManager {
     this.nInput = document.getElementById('nInput');
     this.drawButton = document.getElementById('drawButton');
     this.shareStateButton = document.getElementById('shareStateBtn');
-    this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
-    this.nearestStationVibrateToggle = document.getElementById('nearestStationVibrateToggle');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
-    this.nearestStationNotice = document.getElementById('nearestStationNotice');
-    this.nearestStationNoticeText = document.getElementById('nearestStationNoticeText');
-    this.nearestStationNoticeTimer = null;
     this.appContainer = document.getElementById('app');
     this.controlsContainer = document.getElementById('controls');
     this.controlsDrawerToggle = document.getElementById('controlsDrawerToggle');
@@ -32,8 +27,6 @@ class UIManager {
   // UI要素を初期化
   initialize() {
     this.fillDetectionCountSelect();
-    this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
-    this.setNearestStationVibrationEnabled(Boolean(CONFIG?.nearestStationNotification?.vibrationEnabledByDefault));
     this.initializeMobileDrawer();
     if (this.searchClearButton) {
       this.searchClearButton.addEventListener('click', () => {
@@ -130,25 +123,6 @@ class UIManager {
       this.shareStateButton.addEventListener('click', () => {
         if (callbacks.onShareStateClick) {
           callbacks.onShareStateClick();
-        }
-      });
-    }
-
-    if (this.nearestStationNotifyToggle) {
-      this.nearestStationNotifyToggle.addEventListener('change', () => {
-        if (!this.nearestStationNotifyToggle.checked) {
-          this.hideNearestStationNotification();
-        }
-        if (callbacks.onNearestStationNotifySettingChange) {
-          callbacks.onNearestStationNotifySettingChange(this.nearestStationNotifyToggle.checked);
-        }
-      });
-    }
-
-    if (this.nearestStationVibrateToggle) {
-      this.nearestStationVibrateToggle.addEventListener('change', () => {
-        if (callbacks.onNearestStationVibrationSettingChange) {
-          callbacks.onNearestStationVibrationSettingChange(this.nearestStationVibrateToggle.checked);
         }
       });
     }
@@ -316,68 +290,6 @@ class UIManager {
     const clamped = Math.min(max, Math.max(min, Math.round(numeric)));
     this.nInput.value = String(clamped);
     return clamped;
-  }
-
-  setNearestStationNotificationEnabled(enabled) {
-    if (!this.nearestStationNotifyToggle) {
-      return;
-    }
-    this.nearestStationNotifyToggle.checked = Boolean(enabled);
-  }
-
-  isNearestStationNotificationEnabled() {
-    if (!this.nearestStationNotifyToggle) {
-      return true;
-    }
-    return this.nearestStationNotifyToggle.checked;
-  }
-
-  setNearestStationVibrationEnabled(enabled) {
-    if (!this.nearestStationVibrateToggle) {
-      return;
-    }
-    this.nearestStationVibrateToggle.checked = Boolean(enabled);
-  }
-
-  isNearestStationVibrationEnabled() {
-    if (!this.nearestStationVibrateToggle) {
-      return false;
-    }
-    return this.nearestStationVibrateToggle.checked;
-  }
-
-  showNearestStationNotification(stationName) {
-    if (!this.isNearestStationNotificationEnabled() || !this.nearestStationNotice || !this.nearestStationNoticeText || !stationName) {
-      return;
-    }
-
-    this.nearestStationNoticeText.textContent = `最寄り駅が${stationName}に変更されました`;
-    this.nearestStationNotice.hidden = false;
-    this.nearestStationNotice.classList.add('is-visible');
-
-    if (this.nearestStationNoticeTimer) {
-      clearTimeout(this.nearestStationNoticeTimer);
-      this.nearestStationNoticeTimer = null;
-    }
-
-    const durationMs = Math.max(1000, Number(CONFIG?.nearestStationNotification?.displayDurationMs) || 5000);
-    this.nearestStationNoticeTimer = setTimeout(() => {
-      this.hideNearestStationNotification();
-    }, durationMs);
-  }
-
-  hideNearestStationNotification() {
-    if (!this.nearestStationNotice) {
-      return;
-    }
-
-    if (this.nearestStationNoticeTimer) {
-      clearTimeout(this.nearestStationNoticeTimer);
-      this.nearestStationNoticeTimer = null;
-    }
-
-    this.nearestStationNotice.classList.remove('is-visible');
-    this.nearestStationNotice.hidden = true;
   }
 
   initializeMobileDrawer() {

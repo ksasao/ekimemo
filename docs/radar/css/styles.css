@@ -37,30 +37,6 @@ body {
   position: relative;
 }
 
-.nearest-station-notice {
-  position: absolute;
-  top: calc(env(safe-area-inset-top) + 10px);
-  left: 50%;
-  transform: translate(-50%, -8px);
-  z-index: 1500;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(20, 32, 56, 0.94);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.2;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.nearest-station-notice.is-visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
 /* --- コントロールエリア --- */
 
 #controls {
@@ -151,12 +127,6 @@ body {
 .form-control-wrap {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.setting-check-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .search-input-wrap {
@@ -380,18 +350,6 @@ select {
 }
 
 @media (max-width: 639px) {
-  .nearest-station-notice {
-    max-width: calc(100vw - 20px);
-    font-size: 12px;
-    padding: 10px 12px;
-    text-align: center;
-  }
-
-  .settings-row {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
   #map {
     min-height: 100dvh;
   }

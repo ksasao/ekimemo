@@ -123,12 +123,6 @@ class RadarApp {
       },
       onShareStateClick: async () => {
         await this.copyShareUrlToClipboard();
-      },
-      onNearestStationNotifySettingChange: () => {
-        this.savePersistentViewState();
-      },
-      onNearestStationVibrationSettingChange: () => {
-        this.savePersistentViewState();
       }
     });
 
@@ -221,8 +215,6 @@ class RadarApp {
     return {
       stationId: station.id,
       detectionCount,
-      nearestStationNotificationEnabled: this.uiManager.isNearestStationNotificationEnabled(),
-      nearestStationVibrationEnabled: this.uiManager.isNearestStationVibrationEnabled(),
       mapView: {
         lat: Number(center.lat),
         lng: Number(center.lng),
@@ -273,14 +265,6 @@ class RadarApp {
     const detectionCount = Number(rawState.detectionCount);
     if (Number.isSafeInteger(detectionCount)) {
       parsed.detectionCount = Math.min(CONFIG.detection.max, Math.max(CONFIG.detection.min, detectionCount));
-    }
-
-    if (typeof rawState.nearestStationNotificationEnabled === 'boolean') {
-      parsed.nearestStationNotificationEnabled = rawState.nearestStationNotificationEnabled;
-    }
-
-    if (typeof rawState.nearestStationVibrationEnabled === 'boolean') {
-      parsed.nearestStationVibrationEnabled = rawState.nearestStationVibrationEnabled;
     }
 
     return Object.keys(parsed).length > 0 ? parsed : null;
@@ -532,14 +516,6 @@ class RadarApp {
 
     if (typeof sharedState.voronoiVisible === 'boolean') {
       this.setVoronoiVisibility(sharedState.voronoiVisible);
-    }
-
-    if (typeof sharedState.nearestStationNotificationEnabled === 'boolean') {
-      this.uiManager.setNearestStationNotificationEnabled(sharedState.nearestStationNotificationEnabled);
-    }
-
-    if (typeof sharedState.nearestStationVibrationEnabled === 'boolean') {
-      this.uiManager.setNearestStationVibrationEnabled(sharedState.nearestStationVibrationEnabled);
     }
 
     const station = this.uiManager.getSelectedStation();
