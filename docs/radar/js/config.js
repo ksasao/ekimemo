@@ -65,7 +65,6 @@ const CONFIG = {
 
   nearestStationNotification: {
     enabledByDefault: true,
-    browserNotificationEnabledByDefault: false,
     displayDurationMs: 5000
   },
 
