@@ -352,6 +352,10 @@ select {
   pointer-events: none;
 }
 
+.station-label.station-label-interactive {
+  pointer-events: auto;
+}
+
 /* --- 現在地ボタン --- */
 #currentLocationBtn {
   position: absolute;
