@@ -166,6 +166,19 @@ class StationManager {
     return result;
   }
 
+  getNearestStationByLatLng(latlng) {
+    if (!latlng || !this.kdTree || !Array.isArray(this.stationPositions) || !this.stationPositions.length) {
+      return null;
+    }
+
+    const nearest = this.kdTree.kNearest(latlng[0], latlng[1], 1);
+    if (!Array.isArray(nearest) || !nearest.length || !nearest[0] || !nearest[0].point) {
+      return null;
+    }
+
+    return nearest[0].point;
+  }
+
   // 選択中の駅を起点とした際の順位（距離が近い順）を取得
   getStationRankFrom(baseStation, targetStation) {
     if (!baseStation || !targetStation || !Array.isArray(this.stationPositions)) {

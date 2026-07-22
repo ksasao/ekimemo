@@ -13,6 +13,7 @@ class LocationManager {
     this.button = null;
     this.lastLatLng = null;
     this.locationDotsRefreshed = false;
+    this.lastNearestStationIndex = null;
   }
 
   // ボタンを設定
@@ -97,8 +98,12 @@ class LocationManager {
     }
 
     this.lastLatLng = null;
+    this.lastNearestStationIndex = null;
     if (this.uiManager) {
       this.uiManager.setLocationRank(null);
+      if (typeof this.uiManager.hideNearestStationNotification === 'function') {
+        this.uiManager.hideNearestStationNotification();
+      }
     }
     this.refreshStationDots();
     if (this.mapManager && typeof this.mapManager.refreshStationDotStyles === 'function') {
@@ -140,6 +145,7 @@ class LocationManager {
 
     const resolvedAccuracy = Number.isFinite(accuracy) ? accuracy : 50;
     this.lastLatLng = normalized;
+    this.notifyIfNearestStationChanged(normalized);
 
     if (panToLocation) {
       this.map.panTo(normalized);
@@ -272,5 +278,62 @@ class LocationManager {
       ? this.uiManager.getCurrentStationIndex()
       : null;
     this.mapManager.updateStationDots(currentIndex);
+  }
+
+  notifyIfNearestStationChanged(latlng) {
+    if (!this.stationManager || !latlng || !this.isTrackingLocation) {
+      return;
+    }
+
+    const nearest = this.stationManager.getNearestStationByLatLng(latlng);
+    if (!nearest || typeof nearest.index !== 'number') {
+      return;
+    }
+
+    if (this.lastNearestStationIndex == null) {
+      this.lastNearestStationIndex = nearest.index;
+      return;
+    }
+
+    if (this.lastNearestStationIndex === nearest.index) {
+      return;
+    }
+
+    this.lastNearestStationIndex = nearest.index;
+
+    if (this.uiManager && typeof this.uiManager.showNearestStationNotification === 'function') {
+      this.uiManager.showNearestStationNotification(nearest.name);
+    }
+
+    if (this.shouldVibrateNearestStationChange()) {
+      try {
+        navigator.vibrate([120, 80, 120]);
+      } catch (e) {
+        console.warn('vibration failed:', e);
+      }
+    }
+  }
+
+  shouldVibrateNearestStationChange() {
+    if (!this.uiManager || typeof this.uiManager.isNearestStationVibrationEnabled !== 'function') {
+      return false;
+    }
+    if (!this.uiManager.isNearestStationVibrationEnabled()) {
+      return false;
+    }
+    if (typeof navigator.vibrate !== 'function') {
+      return false;
+    }
+    return this.isAndroidDevice();
+  }
+
+  isAndroidDevice() {
+    if (navigator.userAgentData && typeof navigator.userAgentData.platform === 'string') {
+      if (/android/i.test(navigator.userAgentData.platform)) {
+        return true;
+      }
+    }
+    const ua = navigator.userAgent || '';
+    return /android/i.test(ua);
   }
 }
