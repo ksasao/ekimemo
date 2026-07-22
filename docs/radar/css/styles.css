@@ -39,21 +39,26 @@ body {
 
 .nearest-station-notice {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 10px);
+  top: calc(env(safe-area-inset-top) + 12px);
   left: 50%;
-  transform: translate(-50%, -8px);
+  transform: translate(-50%, -10px);
   z-index: 1500;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(20, 32, 56, 0.94);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
+  min-width: min(560px, calc(100vw - 24px));
+  max-width: min(700px, calc(100vw - 24px));
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  background: linear-gradient(135deg, #ffb347 0%, #ff7a18 55%, #ff4d4f 100%);
+  color: #1f0d00;
+  font-size: 16px;
+  font-weight: 800;
   line-height: 1.2;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  letter-spacing: 0.01em;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(120, 35, 0, 0.35);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
 .nearest-station-notice.is-visible {
@@ -381,9 +386,10 @@ select {
 
 @media (max-width: 639px) {
   .nearest-station-notice {
+    min-width: calc(100vw - 20px);
     max-width: calc(100vw - 20px);
-    font-size: 12px;
-    padding: 10px 12px;
+    font-size: 15px;
+    padding: 13px 14px;
     text-align: center;
   }
 

@@ -363,11 +363,7 @@ class LocationManager {
     }
 
     if (this.shouldVibrateNearestStationChange()) {
-      try {
-        navigator.vibrate([120, 80, 120]);
-      } catch (e) {
-        console.warn('vibration failed:', e);
-      }
+      this.triggerNearestStationVibration();
     }
   }
 
@@ -392,6 +388,34 @@ class LocationManager {
     }
     const ua = navigator.userAgent || '';
     return /android/i.test(ua);
+  }
+
+  triggerNearestStationVibration() {
+    if (typeof navigator.vibrate !== 'function') {
+      return;
+    }
+
+    try {
+      const patterns = [
+        [120, 80, 120],
+        180,
+        [70, 50, 70, 50, 70]
+      ];
+
+      let accepted = false;
+      for (let i = 0; i < patterns.length; i++) {
+        if (navigator.vibrate(patterns[i])) {
+          accepted = true;
+          break;
+        }
+      }
+
+      if (!accepted) {
+        console.warn('Vibration request was not accepted by the browser/device settings.');
+      }
+    } catch (e) {
+      console.warn('vibration failed:', e);
+    }
   }
 
   bindVisibilityEvents() {
