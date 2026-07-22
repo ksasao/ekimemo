@@ -43,7 +43,20 @@ const CONFIG = {
     maxLabelCount: 200,       // 駅名を表示する最大駅数
     labelDensityThreshold: 25, // 500x500px あたりの最大駅数
     tapTolerancePxCoarse: 30,  // スマホ等のタップ判定半径(px)
-    tapTolerancePxFine: 18     // マウス等のクリック判定半径(px)
+    tapTolerancePxFine: 18,    // マウス等のクリック判定半径(px)
+    colorByAttrEnabledByDefault: false,
+    attrFillColors: {
+      eco: '#4CAF50',
+      cool: '#1E88E5',
+      heat: '#E53935',
+      unknown: '#9E9E9E'
+    },
+    attrStrokeColors: {
+      eco: '#2E7D32',
+      cool: '#1565C0',
+      heat: '#B71C1C',
+      unknown: '#616161'
+    }
   },
 
   // デバウンス設定

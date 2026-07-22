@@ -126,6 +126,14 @@ class RadarApp {
       },
       onNearestStationNotifySettingChange: () => {
         this.savePersistentViewState();
+      },
+      onStationAttrColorSettingChange: () => {
+        const station = this.uiManager.getSelectedStation();
+        if (station) {
+          this.mapManager.placeStationMarker(station, false);
+        }
+        this.updateStationDots();
+        this.savePersistentViewState();
       }
     });
 
@@ -219,6 +227,7 @@ class RadarApp {
       stationId: station.id,
       detectionCount,
       nearestStationNotificationEnabled: this.uiManager.isNearestStationNotificationEnabled(),
+      stationAttrColorEnabled: this.uiManager.isStationAttrColorEnabled(),
       mapView: {
         lat: Number(center.lat),
         lng: Number(center.lng),
@@ -273,6 +282,10 @@ class RadarApp {
 
     if (typeof rawState.nearestStationNotificationEnabled === 'boolean') {
       parsed.nearestStationNotificationEnabled = rawState.nearestStationNotificationEnabled;
+    }
+
+    if (typeof rawState.stationAttrColorEnabled === 'boolean') {
+      parsed.stationAttrColorEnabled = rawState.stationAttrColorEnabled;
     }
 
     return Object.keys(parsed).length > 0 ? parsed : null;
@@ -528,6 +541,10 @@ class RadarApp {
 
     if (typeof sharedState.nearestStationNotificationEnabled === 'boolean') {
       this.uiManager.setNearestStationNotificationEnabled(sharedState.nearestStationNotificationEnabled);
+    }
+
+    if (typeof sharedState.stationAttrColorEnabled === 'boolean') {
+      this.uiManager.setStationAttrColorEnabled(sharedState.stationAttrColorEnabled);
     }
 
     const station = this.uiManager.getSelectedStation();

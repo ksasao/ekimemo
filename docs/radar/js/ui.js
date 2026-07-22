@@ -16,6 +16,7 @@ class UIManager {
     this.drawButton = document.getElementById('drawButton');
     this.shareStateButton = document.getElementById('shareStateBtn');
     this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
+    this.stationAttrColorToggle = document.getElementById('stationAttrColorToggle');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
     this.nearestStationNotice = document.getElementById('nearestStationNotice');
     this.nearestStationNoticeText = document.getElementById('nearestStationNoticeText');
@@ -32,6 +33,7 @@ class UIManager {
   initialize() {
     this.fillDetectionCountSelect();
     this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
+    this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
     this.initializeMobileDrawer();
     if (this.searchClearButton) {
       this.searchClearButton.addEventListener('click', () => {
@@ -142,6 +144,14 @@ class UIManager {
         }
         if (callbacks.onNearestStationNotifySettingChange) {
           callbacks.onNearestStationNotifySettingChange(this.nearestStationNotifyToggle.checked);
+        }
+      });
+    }
+
+    if (this.stationAttrColorToggle) {
+      this.stationAttrColorToggle.addEventListener('change', () => {
+        if (callbacks.onStationAttrColorSettingChange) {
+          callbacks.onStationAttrColorSettingChange(this.stationAttrColorToggle.checked);
         }
       });
     }
@@ -323,6 +333,20 @@ class UIManager {
       return true;
     }
     return this.nearestStationNotifyToggle.checked;
+  }
+
+  setStationAttrColorEnabled(enabled) {
+    if (!this.stationAttrColorToggle) {
+      return;
+    }
+    this.stationAttrColorToggle.checked = Boolean(enabled);
+  }
+
+  isStationAttrColorEnabled() {
+    if (!this.stationAttrColorToggle) {
+      return Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault);
+    }
+    return this.stationAttrColorToggle.checked;
   }
 
   isBrowserNotificationSupported() {

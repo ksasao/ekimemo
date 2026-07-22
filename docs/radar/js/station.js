@@ -27,6 +27,7 @@ class StationManager {
       const data = await stationResp.json();
 
       this.stations = data.map((s, index) => {
+        const normalizedAttr = typeof s.attr === 'string' ? s.attr.toLowerCase() : 'unknown';
         return {
           id: s.id,
           code: s.code,
@@ -36,6 +37,7 @@ class StationManager {
           lng: Number(s.lng),
           prefecture: s.prefecture,
           lines: s.lines || [],
+          attr: normalizedAttr,
           voronoi: s.voronoi || null,
           index,
         };
@@ -49,6 +51,7 @@ class StationManager {
         name_kana: s.name_kana,
         prefecture: s.prefecture,
         lines: s.lines,
+        attr: s.attr,
         id: s.id,
         index: s.index,
       }));
