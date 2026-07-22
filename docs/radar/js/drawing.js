@@ -162,6 +162,15 @@ class DrawingManager {
         return;
       }
 
+      if (CONFIG.drawing.pauseWhenHidden && document.hidden) {
+        const retryDelay = Math.max(250, Number(CONFIG.drawing.hiddenRetryDelay) || 1000);
+        this.progressiveDrawTimer = setTimeout(() => {
+          this.progressiveDrawTimer = null;
+          requestAnimationFrame(drawNextRows);
+        }, retryDelay);
+        return;
+      }
+
       const startTime = performance.now();
       const maxTime = CONFIG.drawing.frameTime;
 
@@ -314,7 +323,7 @@ class DrawingManager {
     }
 
     this.progressiveDrawTimer = setTimeout(() => {
-      if (!this.map._isInteracting) {
+      if (!this.map._isInteracting && !(CONFIG.drawing.pauseWhenHidden && document.hidden)) {
         this.drawOverlayWithGridSize(station, detectionCount, nextSize);
       }
     }, CONFIG.drawing.progressiveDelay);

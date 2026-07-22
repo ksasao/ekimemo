@@ -24,11 +24,15 @@ class MapManager {
 
   // マップを初期化
   initialize() {
+    const isCoarsePointer = typeof window.matchMedia === 'function'
+      ? window.matchMedia('(pointer: coarse)').matches
+      : false;
+
     this.map = L.map('map', {
       center: CONFIG.map.center,
       zoom: CONFIG.map.zoom,
       zoomControl: true,
-      preferCanvas: false,
+      preferCanvas: isCoarsePointer,
       zoomDelta: 0.5,
       zoomSnap: 0.25,
     });

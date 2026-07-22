@@ -12,8 +12,11 @@ class LocationManager {
     this.isTrackingLocation = false;
     this.button = null;
     this.lastLatLng = null;
+    this.lastAccuracy = null;
     this.locationDotsRefreshed = false;
     this.lastNearestStationIndex = null;
+    this.visibilityChangeHandler = null;
+    this.isRequestInFlight = false;
   }
 
   // ボタンを設定
@@ -38,6 +41,7 @@ class LocationManager {
     this.isTrackingLocation = true;
     this.button.classList.add('active');
     this.locationDotsRefreshed = false;
+    this.bindVisibilityEvents();
 
     // 初回の位置取得（パンあり）
     navigator.geolocation.getCurrentPosition(
@@ -59,13 +63,52 @@ class LocationManager {
 
   // 定期的な位置情報更新を開始
   startPeriodicUpdate() {
-    this.locationUpdateTimer = setInterval(() => {
+    this.stopPeriodicUpdate();
+    this.scheduleNextLocationUpdate();
+  }
+
+  stopPeriodicUpdate() {
+    if (this.locationUpdateTimer) {
+      clearTimeout(this.locationUpdateTimer);
+      this.locationUpdateTimer = null;
+    }
+  }
+
+  scheduleNextLocationUpdate() {
+    if (!this.isTrackingLocation) {
+      return;
+    }
+
+    const interval = Math.max(500, Number(CONFIG.location.updateInterval) || 1000);
+    this.locationUpdateTimer = setTimeout(() => {
+      this.locationUpdateTimer = null;
+
+      if (!this.isTrackingLocation) {
+        return;
+      }
+
+      const canRun = !document.hidden || !CONFIG.location.pauseWhenHidden;
+      if (!canRun) {
+        this.scheduleNextLocationUpdate();
+        return;
+      }
+
+      if (this.isRequestInFlight) {
+        this.scheduleNextLocationUpdate();
+        return;
+      }
+
+      this.isRequestInFlight = true;
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          this.isRequestInFlight = false;
           this.updateLocation(position, false);
+          this.scheduleNextLocationUpdate();
         },
         (error) => {
+          this.isRequestInFlight = false;
           console.error('位置情報の取得に失敗しました:', error);
+          this.scheduleNextLocationUpdate();
         },
         {
           enableHighAccuracy: CONFIG.location.enableHighAccuracy,
@@ -73,7 +116,7 @@ class LocationManager {
           maximumAge: CONFIG.location.maximumAge
         }
       );
-    }, CONFIG.location.updateInterval);
+    }, interval);
   }
 
   // 位置情報追跡を停止
@@ -83,10 +126,9 @@ class LocationManager {
       this.button.classList.remove('active');
     }
 
-    if (this.locationUpdateTimer) {
-      clearInterval(this.locationUpdateTimer);
-      this.locationUpdateTimer = null;
-    }
+    this.stopPeriodicUpdate();
+    this.unbindVisibilityEvents();
+    this.isRequestInFlight = false;
 
     if (this.currentLocationMarker) {
       this.map.removeLayer(this.currentLocationMarker);
@@ -98,6 +140,7 @@ class LocationManager {
     }
 
     this.lastLatLng = null;
+    this.lastAccuracy = null;
     this.lastNearestStationIndex = null;
     if (this.uiManager) {
       this.uiManager.setLocationRank(null);
@@ -120,6 +163,19 @@ class LocationManager {
 
     const latlng = [position.coords.latitude, position.coords.longitude];
     const accuracy = position.coords.accuracy;
+
+    if (!panToLocation && this.lastLatLng) {
+      const minDistance = Number(CONFIG.location.minDistanceForVisualUpdateMeters) || 0;
+      const minAccuracyDelta = Number(CONFIG.location.minAccuracyDeltaForVisualUpdateMeters) || 0;
+      const movedMeters = this.calculateDistanceMeters(this.lastLatLng, latlng);
+      const prevAccuracy = Number.isFinite(this.lastAccuracy) ? this.lastAccuracy : null;
+      const accuracyDelta = prevAccuracy == null ? Infinity : Math.abs(prevAccuracy - accuracy);
+
+      if (movedMeters < minDistance && accuracyDelta < minAccuracyDelta) {
+        return;
+      }
+    }
+
     this.applyLatLng(latlng, accuracy, panToLocation, false);
   }
 
@@ -145,6 +201,7 @@ class LocationManager {
 
     const resolvedAccuracy = Number.isFinite(accuracy) ? accuracy : 50;
     this.lastLatLng = normalized;
+    this.lastAccuracy = resolvedAccuracy;
     this.notifyIfNearestStationChanged(normalized);
 
     if (panToLocation) {
@@ -335,5 +392,69 @@ class LocationManager {
     }
     const ua = navigator.userAgent || '';
     return /android/i.test(ua);
+  }
+
+  bindVisibilityEvents() {
+    if (this.visibilityChangeHandler) {
+      return;
+    }
+
+    this.visibilityChangeHandler = () => {
+      if (!this.isTrackingLocation || !CONFIG.location.pauseWhenHidden) {
+        return;
+      }
+
+      if (document.hidden) {
+        this.stopPeriodicUpdate();
+      } else if (!this.locationUpdateTimer) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            this.updateLocation(position, false);
+            this.startPeriodicUpdate();
+          },
+          (error) => {
+            console.error('位置情報の取得に失敗しました:', error);
+            this.startPeriodicUpdate();
+          },
+          {
+            enableHighAccuracy: CONFIG.location.enableHighAccuracy,
+            timeout: CONFIG.location.timeout,
+            maximumAge: CONFIG.location.maximumAge
+          }
+        );
+      }
+    };
+
+    document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+  }
+
+  unbindVisibilityEvents() {
+    if (!this.visibilityChangeHandler) {
+      return;
+    }
+    document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+    this.visibilityChangeHandler = null;
+  }
+
+  calculateDistanceMeters(fromLatLng, toLatLng) {
+    if (!Array.isArray(fromLatLng) || !Array.isArray(toLatLng)) {
+      return Infinity;
+    }
+
+    const [lat1, lng1] = fromLatLng;
+    const [lat2, lng2] = toLatLng;
+    if (!Number.isFinite(lat1) || !Number.isFinite(lng1) || !Number.isFinite(lat2) || !Number.isFinite(lng2)) {
+      return Infinity;
+    }
+
+    const toRad = (deg) => deg * Math.PI / 180;
+    const earthRadius = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+      + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2))
+      * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadius * c;
   }
 }
