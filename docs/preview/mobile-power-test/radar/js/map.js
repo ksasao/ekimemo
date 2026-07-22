@@ -660,7 +660,6 @@ class MapManager {
       className: interactive ? 'station-label station-label-interactive' : 'station-label',
       html: `<div style="
         width: 200px;
-        margin-left: -100px;
         margin-top: 8px;
         font-size: 16px;
         font-weight: 700;
