@@ -16,7 +16,7 @@ class UIManager {
     this.drawButton = document.getElementById('drawButton');
     this.shareStateButton = document.getElementById('shareStateBtn');
     this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
-    this.nearestStationVibrateToggle = document.getElementById('nearestStationVibrateToggle');
+    this.nearestStationBrowserNotifyToggle = document.getElementById('nearestStationBrowserNotifyToggle');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
     this.nearestStationNotice = document.getElementById('nearestStationNotice');
     this.nearestStationNoticeText = document.getElementById('nearestStationNoticeText');
@@ -33,7 +33,7 @@ class UIManager {
   initialize() {
     this.fillDetectionCountSelect();
     this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
-    this.setNearestStationVibrationEnabled(Boolean(CONFIG?.nearestStationNotification?.vibrationEnabledByDefault));
+    this.setNearestStationBrowserNotificationEnabled(Boolean(CONFIG?.nearestStationNotification?.browserNotificationEnabledByDefault));
     this.initializeMobileDrawer();
     if (this.searchClearButton) {
       this.searchClearButton.addEventListener('click', () => {
@@ -145,13 +145,21 @@ class UIManager {
       });
     }
 
-    if (this.nearestStationVibrateToggle) {
-      this.nearestStationVibrateToggle.addEventListener('change', () => {
-        if (callbacks.onNearestStationVibrationSettingChange) {
-          callbacks.onNearestStationVibrationSettingChange(this.nearestStationVibrateToggle.checked);
+    if (this.nearestStationBrowserNotifyToggle) {
+      this.nearestStationBrowserNotifyToggle.addEventListener('change', async () => {
+        if (this.nearestStationBrowserNotifyToggle.checked) {
+          const granted = await this.ensureBrowserNotificationPermission();
+          if (!granted) {
+            this.nearestStationBrowserNotifyToggle.checked = false;
+          }
+        }
+
+        if (callbacks.onNearestStationBrowserNotifySettingChange) {
+          callbacks.onNearestStationBrowserNotifySettingChange(this.nearestStationBrowserNotifyToggle.checked);
         }
       });
     }
+
   }
 
   // 駅候補を更新
@@ -332,18 +340,47 @@ class UIManager {
     return this.nearestStationNotifyToggle.checked;
   }
 
-  setNearestStationVibrationEnabled(enabled) {
-    if (!this.nearestStationVibrateToggle) {
+  setNearestStationBrowserNotificationEnabled(enabled) {
+    if (!this.nearestStationBrowserNotifyToggle) {
       return;
     }
-    this.nearestStationVibrateToggle.checked = Boolean(enabled);
+
+    const available = this.isBrowserNotificationSupported();
+    this.nearestStationBrowserNotifyToggle.disabled = !available;
+    this.nearestStationBrowserNotifyToggle.checked = available && Boolean(enabled);
   }
 
-  isNearestStationVibrationEnabled() {
-    if (!this.nearestStationVibrateToggle) {
+  isNearestStationBrowserNotificationEnabled() {
+    if (!this.nearestStationBrowserNotifyToggle) {
       return false;
     }
-    return this.nearestStationVibrateToggle.checked;
+    return !this.nearestStationBrowserNotifyToggle.disabled && this.nearestStationBrowserNotifyToggle.checked;
+  }
+
+  isBrowserNotificationSupported() {
+    return window.isSecureContext && typeof Notification !== 'undefined';
+  }
+
+  async ensureBrowserNotificationPermission() {
+    if (!this.isBrowserNotificationSupported()) {
+      return false;
+    }
+
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+
+    if (Notification.permission === 'denied') {
+      return false;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    } catch (error) {
+      console.warn('Notification permission request failed:', error);
+      return false;
+    }
   }
 
   showNearestStationNotification(stationName) {
@@ -351,9 +388,18 @@ class UIManager {
       return;
     }
 
-    this.nearestStationNoticeText.textContent = `最寄り駅が${stationName}に変更されました`;
+    this.nearestStationNoticeText.textContent = '';
+    this.nearestStationNoticeText.appendChild(document.createTextNode('最寄り駅が'));
+    const stationNameNode = document.createElement('span');
+    stationNameNode.className = 'nearest-station-name';
+    stationNameNode.textContent = stationName;
+    this.nearestStationNoticeText.appendChild(stationNameNode);
+    this.nearestStationNoticeText.appendChild(document.createTextNode('に変更されました'));
     this.nearestStationNotice.hidden = false;
+    this.nearestStationNotice.classList.remove('notice-emphasis');
+    void this.nearestStationNotice.offsetWidth;
     this.nearestStationNotice.classList.add('is-visible');
+    this.nearestStationNotice.classList.add('notice-emphasis');
 
     if (this.nearestStationNoticeTimer) {
       clearTimeout(this.nearestStationNoticeTimer);
@@ -364,6 +410,34 @@ class UIManager {
     this.nearestStationNoticeTimer = setTimeout(() => {
       this.hideNearestStationNotification();
     }, durationMs);
+  }
+
+  showNearestStationBrowserNotification(stationName) {
+    if (!stationName || !this.isNearestStationBrowserNotificationEnabled() || !this.isBrowserNotificationSupported()) {
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      return;
+    }
+
+    try {
+      const notification = new Notification('最寄り駅が変更されました', {
+        body: stationName,
+        icon: 'favicon.png',
+        tag: 'nearest-station-changed',
+        renotify: true,
+        silent: false,
+      });
+
+      setTimeout(() => {
+        if (notification && typeof notification.close === 'function') {
+          notification.close();
+        }
+      }, 4500);
+    } catch (error) {
+      console.warn('Failed to show browser notification:', error);
+    }
   }
 
   hideNearestStationNotification() {
@@ -377,6 +451,7 @@ class UIManager {
     }
 
     this.nearestStationNotice.classList.remove('is-visible');
+    this.nearestStationNotice.classList.remove('notice-emphasis');
     this.nearestStationNotice.hidden = true;
   }
 

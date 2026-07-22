@@ -65,7 +65,7 @@ const CONFIG = {
 
   nearestStationNotification: {
     enabledByDefault: true,
-    vibrationEnabledByDefault: true,
+    browserNotificationEnabledByDefault: false,
     displayDurationMs: 5000
   },
 
