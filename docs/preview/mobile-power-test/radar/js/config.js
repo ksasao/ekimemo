@@ -31,9 +31,7 @@ const CONFIG = {
   drawing: {
     gridSizes: [16, 8, 4, 2], // 段階的に細かくするグリッドサイズ
     progressiveDelay: 300,     // 次の段階への遅延(ms)
-    frameTime: 16,             // 1フレームの最大処理時間(ms)
-    pauseWhenHidden: true,
-    hiddenRetryDelay: 1000
+    frameTime: 16              // 1フレームの最大処理時間(ms)
   },
 
   // 駅ドット表示設定
@@ -57,10 +55,7 @@ const CONFIG = {
     updateInterval: 1000,     // 位置情報の更新間隔(ms)
     enableHighAccuracy: true,
     timeout: 10000,
-    maximumAge: 5000,
-    pauseWhenHidden: true,
-    minDistanceForVisualUpdateMeters: 15,
-    minAccuracyDeltaForVisualUpdateMeters: 20
+    maximumAge: 0
   },
 
   // 検知数の設定
