@@ -6,6 +6,7 @@ class VoronoiManager {
     this.stationManager = stationManager;
     this.voronoiLayer = null;
     this.isVisible = false;
+    this.hasRendered = false;
   }
 
   // ボロノイレイヤーを初期化
@@ -43,25 +44,28 @@ class VoronoiManager {
       if (!this.voronoiLayer._map) {
         this.voronoiLayer.addTo(this.map);
       }
-      this.drawVoronoi();
+      this.drawVoronoi({ force: false });
     } else {
       if (this.voronoiLayer._map) {
         this.voronoiLayer.remove();
       }
       this.voronoiLayer.clearLayers();
+      this.hasRendered = false;
     }
     
     return this.isVisible;
   }
 
   // ボロノイ図を描画（GeoJSONデータを使用）
-  drawVoronoi() {
+  drawVoronoi(options = {}) {
     if (!this.isVisible) return;
 
-    this.voronoiLayer.clearLayers();
+    const force = Boolean(options.force);
+    if (!force && this.hasRendered && this.voronoiLayer && this.voronoiLayer.getLayers().length > 0) {
+      return;
+    }
 
-    const bounds = this.map.getBounds();
-    let drawnCount = 0;
+    this.voronoiLayer.clearLayers();
 
     // 各駅のvoronoiデータを描画
     this.stationManager.stations.forEach((station) => {
@@ -91,7 +95,6 @@ class VoronoiManager {
           });
           
           this.voronoiLayer.addLayer(polyline);
-          drawnCount++;
         }
       }
       // MultiPolygonの場合（もしあれば）
@@ -110,18 +113,18 @@ class VoronoiManager {
             });
             
             this.voronoiLayer.addLayer(polyline);
-            drawnCount++;
           }
         });
       }
     });
+
+    this.hasRendered = true;
   }
 
   // ボロノイ図を更新
   update() {
-    if (this.isVisible) {
-      this.drawVoronoi();
-    }
+    // ボロノイ図はLeafletの座標変換で追従するため再描画は不要。
+    return;
   }
 
   // 表示状態を取得

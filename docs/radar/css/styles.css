@@ -37,6 +37,65 @@ body {
   position: relative;
 }
 
+.nearest-station-notice {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 12px);
+  left: 50%;
+  transform: translate(-50%, -10px);
+  z-index: 1500;
+  min-width: min(560px, calc(100vw - 24px));
+  max-width: min(700px, calc(100vw - 24px));
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  background: linear-gradient(135deg, #d8f7ff 0%, #9ee8ff 42%, #7cd9f6 100%);
+  color: #0f3b52;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+  box-shadow: 0 10px 28px rgba(13, 94, 128, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.nearest-station-notice .nearest-station-name {
+  display: inline-block;
+  margin: 0 2px;
+  font-size: 1.8em;
+  line-height: 1;
+  font-weight: 900;
+  color: #005e87;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  vertical-align: -0.08em;
+}
+
+.nearest-station-notice.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.nearest-station-notice.notice-emphasis {
+  animation: noticeSlideInTop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0s 1;
+}
+
+@keyframes noticeSlideInTop {
+  0% {
+    transform: translate(-50%, -26px);
+    opacity: 0;
+  }
+  70% {
+    transform: translate(-50%, 3px);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
 /* --- コントロールエリア --- */
 
 #controls {
@@ -127,6 +186,12 @@ body {
 .form-control-wrap {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.setting-check-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .search-input-wrap {
@@ -350,6 +415,19 @@ select {
 }
 
 @media (max-width: 639px) {
+  .nearest-station-notice {
+    min-width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    font-size: 15px;
+    padding: 13px 14px;
+    text-align: center;
+  }
+
+  .settings-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   #map {
     min-height: 100dvh;
   }

@@ -15,7 +15,11 @@ class UIManager {
     this.nInput = document.getElementById('nInput');
     this.drawButton = document.getElementById('drawButton');
     this.shareStateButton = document.getElementById('shareStateBtn');
+    this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
+    this.nearestStationNotice = document.getElementById('nearestStationNotice');
+    this.nearestStationNoticeText = document.getElementById('nearestStationNoticeText');
+    this.nearestStationNoticeTimer = null;
     this.appContainer = document.getElementById('app');
     this.controlsContainer = document.getElementById('controls');
     this.controlsDrawerToggle = document.getElementById('controlsDrawerToggle');
@@ -27,6 +31,7 @@ class UIManager {
   // UI要素を初期化
   initialize() {
     this.fillDetectionCountSelect();
+    this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
     this.initializeMobileDrawer();
     if (this.searchClearButton) {
       this.searchClearButton.addEventListener('click', () => {
@@ -123,6 +128,20 @@ class UIManager {
       this.shareStateButton.addEventListener('click', () => {
         if (callbacks.onShareStateClick) {
           callbacks.onShareStateClick();
+        }
+      });
+    }
+
+    if (this.nearestStationNotifyToggle) {
+      this.nearestStationNotifyToggle.addEventListener('change', async () => {
+        if (this.nearestStationNotifyToggle.checked) {
+          await this.ensureBrowserNotificationPermission();
+        }
+        if (!this.nearestStationNotifyToggle.checked) {
+          this.hideNearestStationNotification();
+        }
+        if (callbacks.onNearestStationNotifySettingChange) {
+          callbacks.onNearestStationNotifySettingChange(this.nearestStationNotifyToggle.checked);
         }
       });
     }
@@ -290,6 +309,118 @@ class UIManager {
     const clamped = Math.min(max, Math.max(min, Math.round(numeric)));
     this.nInput.value = String(clamped);
     return clamped;
+  }
+
+  setNearestStationNotificationEnabled(enabled) {
+    if (!this.nearestStationNotifyToggle) {
+      return;
+    }
+    this.nearestStationNotifyToggle.checked = Boolean(enabled);
+  }
+
+  isNearestStationNotificationEnabled() {
+    if (!this.nearestStationNotifyToggle) {
+      return true;
+    }
+    return this.nearestStationNotifyToggle.checked;
+  }
+
+  isBrowserNotificationSupported() {
+    return window.isSecureContext && typeof Notification !== 'undefined';
+  }
+
+  async ensureBrowserNotificationPermission() {
+    if (!this.isBrowserNotificationSupported()) {
+      return false;
+    }
+
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+
+    if (Notification.permission === 'denied') {
+      return false;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    } catch (error) {
+      console.warn('Notification permission request failed:', error);
+      return false;
+    }
+  }
+
+  showNearestStationNotification(stationName) {
+    if (!this.isNearestStationNotificationEnabled() || !this.nearestStationNotice || !this.nearestStationNoticeText || !stationName) {
+      return;
+    }
+
+    this.nearestStationNoticeText.textContent = '';
+    this.nearestStationNoticeText.appendChild(document.createTextNode('最寄り駅が'));
+    const stationNameNode = document.createElement('span');
+    stationNameNode.className = 'nearest-station-name';
+    stationNameNode.textContent = stationName;
+    this.nearestStationNoticeText.appendChild(stationNameNode);
+    this.nearestStationNoticeText.appendChild(document.createTextNode('に変更されました'));
+    this.nearestStationNotice.hidden = false;
+    this.nearestStationNotice.classList.remove('notice-emphasis');
+    void this.nearestStationNotice.offsetWidth;
+    this.nearestStationNotice.classList.add('is-visible');
+    this.nearestStationNotice.classList.add('notice-emphasis');
+
+    if (this.nearestStationNoticeTimer) {
+      clearTimeout(this.nearestStationNoticeTimer);
+      this.nearestStationNoticeTimer = null;
+    }
+
+    const durationMs = Math.max(1000, Number(CONFIG?.nearestStationNotification?.displayDurationMs) || 5000);
+    this.nearestStationNoticeTimer = setTimeout(() => {
+      this.hideNearestStationNotification();
+    }, durationMs);
+  }
+
+  showNearestStationBrowserNotification(stationName) {
+    if (!stationName || !this.isNearestStationNotificationEnabled() || !this.isBrowserNotificationSupported()) {
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      return;
+    }
+
+    try {
+      const notification = new Notification('最寄り駅が変更されました', {
+        body: stationName,
+        icon: 'favicon.png',
+        tag: 'nearest-station-changed',
+        renotify: true,
+        silent: false,
+      });
+
+      setTimeout(() => {
+        if (notification && typeof notification.close === 'function') {
+          notification.close();
+        }
+      }, 4500);
+    } catch (error) {
+      console.warn('Failed to show browser notification:', error);
+    }
+  }
+
+  hideNearestStationNotification() {
+    if (!this.nearestStationNotice) {
+      return;
+    }
+
+    if (this.nearestStationNoticeTimer) {
+      clearTimeout(this.nearestStationNoticeTimer);
+      this.nearestStationNoticeTimer = null;
+    }
+
+    this.nearestStationNotice.classList.remove('is-visible');
+    this.nearestStationNotice.classList.remove('notice-emphasis');
+    this.nearestStationNotice.hidden = true;
   }
 
   initializeMobileDrawer() {

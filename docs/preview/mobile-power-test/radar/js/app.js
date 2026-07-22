@@ -126,9 +126,6 @@ class RadarApp {
       },
       onNearestStationNotifySettingChange: () => {
         this.savePersistentViewState();
-      },
-      onNearestStationBrowserNotifySettingChange: () => {
-        this.savePersistentViewState();
       }
     });
 
@@ -222,7 +219,6 @@ class RadarApp {
       stationId: station.id,
       detectionCount,
       nearestStationNotificationEnabled: this.uiManager.isNearestStationNotificationEnabled(),
-      nearestStationBrowserNotificationEnabled: this.uiManager.isNearestStationBrowserNotificationEnabled(),
       mapView: {
         lat: Number(center.lat),
         lng: Number(center.lng),
@@ -277,10 +273,6 @@ class RadarApp {
 
     if (typeof rawState.nearestStationNotificationEnabled === 'boolean') {
       parsed.nearestStationNotificationEnabled = rawState.nearestStationNotificationEnabled;
-    }
-
-    if (typeof rawState.nearestStationBrowserNotificationEnabled === 'boolean') {
-      parsed.nearestStationBrowserNotificationEnabled = rawState.nearestStationBrowserNotificationEnabled;
     }
 
     return Object.keys(parsed).length > 0 ? parsed : null;
@@ -536,10 +528,6 @@ class RadarApp {
 
     if (typeof sharedState.nearestStationNotificationEnabled === 'boolean') {
       this.uiManager.setNearestStationNotificationEnabled(sharedState.nearestStationNotificationEnabled);
-    }
-
-    if (typeof sharedState.nearestStationBrowserNotificationEnabled === 'boolean') {
-      this.uiManager.setNearestStationBrowserNotificationEnabled(sharedState.nearestStationBrowserNotificationEnabled);
     }
 
     const station = this.uiManager.getSelectedStation();
