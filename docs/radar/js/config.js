@@ -41,7 +41,9 @@ const CONFIG = {
     minZoom: 11,              // 駅ドットを表示する最小ズームレベル
     labelZoom: 13,            // 駅名を表示する最小ズームレベル（密度判定と併用）
     maxLabelCount: 200,       // 駅名を表示する最大駅数
-    labelDensityThreshold: 25  // 500x500px あたりの最大駅数
+    labelDensityThreshold: 25, // 500x500px あたりの最大駅数
+    tapTolerancePxCoarse: 30,  // スマホ等のタップ判定半径(px)
+    tapTolerancePxFine: 18     // マウス等のクリック判定半径(px)
   },
 
   // デバウンス設定
