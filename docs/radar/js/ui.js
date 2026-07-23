@@ -16,6 +16,7 @@ class UIManager {
     this.drawButton = document.getElementById('drawButton');
     this.shareStateButton = document.getElementById('shareStateBtn');
     this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
+    this.highFrequencyGpsToggle = document.getElementById('highFrequencyGpsToggle');
     this.stationAttrColorToggle = document.getElementById('stationAttrColorToggle');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
     this.nearestStationNotice = document.getElementById('nearestStationNotice');
@@ -33,6 +34,7 @@ class UIManager {
   initialize() {
     this.fillDetectionCountSelect();
     this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
+    this.setHighFrequencyGpsEnabled(false);
     this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
     this.initializeMobileDrawer();
     if (this.searchClearButton) {
@@ -144,6 +146,14 @@ class UIManager {
         }
         if (callbacks.onNearestStationNotifySettingChange) {
           callbacks.onNearestStationNotifySettingChange(this.nearestStationNotifyToggle.checked);
+        }
+      });
+    }
+
+    if (this.highFrequencyGpsToggle) {
+      this.highFrequencyGpsToggle.addEventListener('change', () => {
+        if (callbacks.onHighFrequencyGpsSettingChange) {
+          callbacks.onHighFrequencyGpsSettingChange(this.highFrequencyGpsToggle.checked);
         }
       });
     }
@@ -340,6 +350,20 @@ class UIManager {
       return;
     }
     this.stationAttrColorToggle.checked = Boolean(enabled);
+  }
+
+  setHighFrequencyGpsEnabled(enabled) {
+    if (!this.highFrequencyGpsToggle) {
+      return;
+    }
+    this.highFrequencyGpsToggle.checked = Boolean(enabled);
+  }
+
+  isHighFrequencyGpsEnabled() {
+    if (!this.highFrequencyGpsToggle) {
+      return false;
+    }
+    return this.highFrequencyGpsToggle.checked;
   }
 
   isStationAttrColorEnabled() {
