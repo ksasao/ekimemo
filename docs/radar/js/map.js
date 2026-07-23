@@ -1,5 +1,34 @@
 // マップ管理
 
+const STATION_POPUP_CONTAINER_STYLE = 'font-family: system-ui, sans-serif; min-width: 150px;';
+const STATION_POPUP_TITLE_STYLE = 'font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #222;';
+const STATION_POPUP_KANA_STYLE = 'font-size: 13px; color: #666; margin-bottom: 6px;';
+const STATION_POPUP_PREFECTURE_STYLE = 'font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px; margin-bottom: 4px;';
+const STATION_POPUP_SELECTED_STYLE = 'font-size: 12px; color: #888; margin-top: 6px; padding-top: 4px; border-top: 1px solid #eee;';
+const STATION_POPUP_ACTION_WRAPPER_STYLE = 'margin-top: 8px;';
+const STATION_POPUP_ACTION_STYLE = [
+  'display: inline-block',
+  'padding: 6px 12px',
+  'background: linear-gradient(135deg, #2f80ff 0%, #175ddc 100%)',
+  'color: white',
+  'text-decoration: none',
+  'border-radius: 6px',
+  'font-size: 13px',
+  'font-weight: 600',
+  'text-align: center',
+  'box-shadow: 0 2px 4px rgba(23, 93, 220, 0.3)',
+  'transition: transform 0.1s ease, box-shadow 0.1s ease'
+].join('; ');
+const STATION_LABEL_BASE_STYLE = [
+  'width: 200px',
+  'margin-top: 8px',
+  'font-size: 16px',
+  'font-weight: 700',
+  'text-align: center',
+  'text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, -2px 0 0 #fff, 2px 0 0 #fff, 0 -2px 0 #fff, 0 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff',
+  'white-space: nowrap'
+].join('; ');
+
 class MapManager {
   constructor(stationManager, uiManager) {
     this.stationManager = stationManager;
@@ -588,10 +617,25 @@ class MapManager {
     layer.on('click', openStationPopup);
     layer.on('touchend', openStationPopup);
 
-    layer.on('popupopen', () => {
+    layer.on('popupopen', (event) => {
       if (typeof layer.stationIndex === 'number') {
         this.lastUserOpenedStationIndex = layer.stationIndex;
       }
+
+      const popupElement = event && event.popup && typeof event.popup.getElement === 'function'
+        ? event.popup.getElement()
+        : null;
+      if (popupElement) {
+        this.bindStationPopupActions(popupElement);
+        return;
+      }
+
+      window.setTimeout(() => {
+        const retryPopupElement = event && event.popup && typeof event.popup.getElement === 'function'
+          ? event.popup.getElement()
+          : null;
+        this.bindStationPopupActions(retryPopupElement);
+      }, 0);
     });
 
     layer.on('popupclose', () => {
@@ -615,7 +659,6 @@ class MapManager {
     const linesHTML = this.stationManager.getLineNamesHTML(station.lines);
     const stationName = this.escapeHtml(station.name || '');
     const stationKana = this.escapeHtml(station.name_kana || '');
-    const safeStationNameForAction = this.escapeJsSingleQuotedString(station.name || '');
 
     const locationRankForStation = locationLatLng
       ? this.stationManager.getStationRankFromLatLng(locationLatLng, station)
@@ -625,31 +668,19 @@ class MapManager {
       : '';
 
     const selectedBadgeHTML = isSelected
-      ? '<div style="font-size: 12px; color: #888; margin-top: 6px; padding-top: 4px; border-top: 1px solid #eee;">現在選択中の駅</div>'
+      ? `<div style="${STATION_POPUP_SELECTED_STYLE}">現在選択中の駅</div>`
       : '';
     const selectActionHTML = isSelected
       ? ''
-      : `<div style="margin-top: 8px;">
-          <a href="#" onclick="window.app.selectStationByName('${safeStationNameForAction}'); return false;" style="
-            display: inline-block;
-            padding: 6px 12px;
-            background: linear-gradient(135deg, #2f80ff 0%, #175ddc 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(23, 93, 220, 0.3);
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
-          " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 3px 6px rgba(23, 93, 220, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(23, 93, 220, 0.3)';">この駅を指定</a>
+      : `<div style="${STATION_POPUP_ACTION_WRAPPER_STYLE}">
+          <a href="#" class="station-select-action" data-station-name="${this.escapeHtml(station.name || '')}" style="${STATION_POPUP_ACTION_STYLE}">この駅を指定</a>
         </div>`;
 
     return `
-      <div style="font-family: system-ui, sans-serif; min-width: 150px;">
-        <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #222;">${stationName}</div>
-        <div style="font-size: 13px; color: #666; margin-bottom: 6px;">${stationKana}</div>
-        <div style="font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px; margin-bottom: 4px;">${prefectureName}</div>
+      <div style="${STATION_POPUP_CONTAINER_STYLE}">
+        <div style="${STATION_POPUP_TITLE_STYLE}">${stationName}</div>
+        <div style="${STATION_POPUP_KANA_STYLE}">${stationKana}</div>
+        <div style="${STATION_POPUP_PREFECTURE_STYLE}">${prefectureName}</div>
         ${linesHTML}
         ${locationRankHTML}
         ${selectedBadgeHTML}
@@ -665,21 +696,7 @@ class MapManager {
 
     return L.divIcon({
       className: interactive ? 'station-label station-label-interactive' : 'station-label',
-      html: `<div style="
-        width: 200px;
-        margin-top: 8px;
-        font-size: 16px;
-        font-weight: 700;
-        color: ${color};
-        text-align: center;
-        text-shadow:
-          -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff,
-          -2px 0 0 #fff, 2px 0 0 #fff, 0 -2px 0 #fff, 0 2px 0 #fff,
-          -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
-        white-space: nowrap;
-        pointer-events: ${interactive ? 'auto' : 'none'};
-        cursor: ${interactive ? 'pointer' : 'default'};
-      ">${safeStationName}</div>`,
+      html: `<div style="${STATION_LABEL_BASE_STYLE}; color: ${color}; pointer-events: ${interactive ? 'auto' : 'none'}; cursor: ${interactive ? 'pointer' : 'default'};">${safeStationName}</div>`,
       iconSize: [200, 32],
       iconAnchor: [100, 0],
     });
@@ -694,12 +711,70 @@ class MapManager {
       .replace(/'/g, '&#39;');
   }
 
-  escapeJsSingleQuotedString(value) {
-    return String(value)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'")
-      .replace(/\r/g, '\\r')
-      .replace(/\n/g, '\\n');
+  bindStationPopupActions(popupElement) {
+    if (!popupElement) {
+      return;
+    }
+
+    if (popupElement.__stationPopupActionsBound) {
+      return;
+    }
+
+    const onClick = (event) => {
+      const selectAction = this.getStationPopupActionFromEvent(event, popupElement);
+      if (!selectAction) {
+        return;
+      }
+
+      event.preventDefault();
+      const stationName = selectAction.getAttribute('data-station-name') || '';
+      if (window.app && typeof window.app.selectStationByName === 'function') {
+        window.app.selectStationByName(stationName);
+      }
+    };
+
+    const onPointerOver = (event) => {
+      const selectAction = this.getStationPopupActionFromEvent(event, popupElement);
+      if (!selectAction) {
+        return;
+      }
+
+      selectAction.style.transform = 'translateY(-1px)';
+      selectAction.style.boxShadow = '0 3px 6px rgba(23, 93, 220, 0.4)';
+    };
+
+    const onPointerOut = (event) => {
+      const selectAction = this.getStationPopupActionFromEvent(event, popupElement);
+      if (!selectAction) {
+        return;
+      }
+
+      selectAction.style.transform = 'translateY(0)';
+      selectAction.style.boxShadow = '0 2px 4px rgba(23, 93, 220, 0.3)';
+    };
+
+    popupElement.addEventListener('click', onClick);
+    popupElement.addEventListener('pointerover', onPointerOver);
+    popupElement.addEventListener('pointerout', onPointerOut);
+    popupElement.__stationPopupActionsBound = true;
+  }
+
+  getStationPopupActionFromEvent(event, popupElement) {
+    if (!event || !popupElement) {
+      return null;
+    }
+
+    const target = event.target;
+    if (!target || typeof target.closest !== 'function') {
+      return null;
+    }
+
+    const selectAction = target.closest('.station-select-action');
+    if (!selectAction || !popupElement.contains(selectAction)) {
+      return null;
+    }
+
+    return selectAction;
   }
 
   resolveStationFillColor(attr, fallbackFillColor) {

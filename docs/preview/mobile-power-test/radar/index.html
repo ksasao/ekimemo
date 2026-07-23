@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>駅レーダーマップ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="keywords" content="駅レーダーマップ, 距離, 現在地, 検知数, レーダー, ボロノイ図, 駅名検索, マップ, 地図, 駅データ, 駅メモ, 駅メモ！" />
+  <meta name="description" content="駅メモ！に設定されている指定した駅がレーダーで届く範囲を地図上に描画します。現在地から届く駅を地図上にプロットすることもできます。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://*.tile.openstreetmap.org; connect-src 'self' https://unpkg.com; font-src 'self' data:; base-uri 'self'; form-action 'self';">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <div id="app">
+    <div id="nearestStationNotice" class="nearest-station-notice" role="status" aria-live="polite" aria-atomic="true" hidden>
+      <span id="nearestStationNoticeText"></span>
+    </div>
+
+    <button id="controlsDrawerToggle" class="controls-toggle-btn controls-toggle-floating" type="button" aria-expanded="false" aria-controls="controls" aria-label="条件を開く">条件を表示</button>
+
+    <div id="controls">
+      <div id="controls-inner">
+        <div id="controlsHeader">
+          <p id="controls-title">指定した駅がレーダーで取得可能な範囲を描画します</p>
+          <button id="controlsDrawerCloseBtn" class="controls-toggle-btn controls-toggle-inline controls-close-icon-btn" type="button" aria-expanded="true" aria-controls="controls" aria-label="条件を閉じる">×</button>
+        </div>
+
+        <div class="form-grid">
+          <!-- 駅名検索 -->
+          <div class="form-row">
+            <div class="form-label">駅名検索</div>
+            <div class="form-control-wrap search-input-wrap">
+              <input id="searchInput" type="text" placeholder="例: 三崎口, 東京, 新大阪..." autocomplete="off" />
+              <button type="button" id="searchClearBtn" class="input-clear-btn" aria-label="検索入力をクリア">×</button>
+            </div>
+          </div>
+
+          <!-- 候補 -->
+          <div class="form-row">
+            <div class="form-label">候補</div>
+            <div class="form-control-wrap">
+              <select id="stationSelect"></select>
+            </div>
+          </div>
+
+          <!-- n -->
+          <div class="form-row">
+            <div class="form-label">検知数</div>
+            <div class="form-control-wrap">
+              <select id="nInput"></select>
+            </div>
+          </div>
+
+          <!-- 描画ボタン -->
+          <div class="form-row" style="grid-column: 1 / -1; justify-content: flex-start; margin-top: 4px;">
+            <div class="form-control-wrap" style="max-width: 140px;">
+              <button id="drawButton">描画</button>
+            </div>
+            <div class="form-control-wrap" style="max-width: 180px;">
+              <button id="shareStateBtn" type="button">シェア</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
+              <input type="checkbox" id="voronoiToggle" style="width: auto; cursor: pointer;" />
+              <label for="voronoiToggle"
+                style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">ボロノイ図を表示</label>
+            </div>
+          </div>
+
+          <div class="form-row settings-row" style="grid-column: 1 / -1; justify-content: flex-start; gap: 12px;">
+            <div class="setting-check-wrap">
+              <input type="checkbox" id="nearestStationNotifyToggle" style="width: auto; cursor: pointer;" />
+              <label for="nearestStationNotifyToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">最寄り駅が変更されたら通知</label>
+            </div>
+            <div class="setting-check-wrap">
+              <input type="checkbox" id="highFrequencyGpsToggle" style="width: auto; cursor: pointer;" />
+              <label for="highFrequencyGpsToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">位置情報を高頻度更新</label>
+            </div>
+            <div class="setting-check-wrap">
+              <input type="checkbox" id="stationAttrColorToggle" style="width: auto; cursor: pointer;" />
+              <label for="stationAttrColorToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">駅属性で塗り分け</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="selectedStationLabel">選択中の駅: なし</div>
+      </div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- 現在地取得ボタン -->
+    <button id="currentLocationBtn" title="現在地を表示">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path
+          d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- JavaScript modules -->
+  <script src="js/config.js"></script>
+  <script src="js/kdtree.js"></script>
+  <script src="js/station.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/location.js"></script>
+  <script src="js/drawing.js"></script>
+  <script src="js/voronoi.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>

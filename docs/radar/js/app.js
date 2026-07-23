@@ -173,11 +173,9 @@ class RadarApp {
   selectInitialStation() {
     const station = this.uiManager.selectInitialStation(CONFIG.initialStation);
     if (station) {
-      this.mapManager.placeStationMarker(station, true);
-      this.redrawOverlayAndStations();
-      this.fitMapToOverlay();
-      this.locationManager.refreshLocationRank();
-      this.savePersistentViewState();
+      this.applySelectedStationState(station, {
+        redrawOverlayAndStations: true,
+      });
     }
   }
 
@@ -207,10 +205,37 @@ class RadarApp {
     this.uiManager.selectStationByName(stationName);
     const station = this.uiManager.getSelectedStation();
     if (station) {
-      this.mapManager.placeStationMarker(station, true);
+      this.applySelectedStationState(station, {
+        redrawOverlayAndStations: true,
+      });
+    }
+  }
+
+  applySelectedStationState(station, options = {}) {
+    if (!station) {
+      return;
+    }
+
+    const redrawOverlayAndStations = Boolean(options.redrawOverlayAndStations);
+    const fitMapToOverlay = options.fitMapToOverlay !== false;
+    const refreshLocationRank = options.refreshLocationRank !== false;
+    const savePersistentViewState = options.savePersistentViewState !== false;
+
+    this.mapManager.placeStationMarker(station, redrawOverlayAndStations);
+
+    if (redrawOverlayAndStations) {
       this.redrawOverlayAndStations();
+    }
+
+    if (refreshLocationRank) {
       this.locationManager.refreshLocationRank();
+    }
+
+    if (fitMapToOverlay) {
       this.fitMapToOverlay();
+    }
+
+    if (savePersistentViewState) {
       this.savePersistentViewState();
     }
   }
@@ -564,9 +589,11 @@ class RadarApp {
 
     const station = this.uiManager.getSelectedStation();
     if (station) {
-      this.mapManager.placeStationMarker(station, false);
-      this.redrawOverlayAndStations();
-      this.locationManager.refreshLocationRank();
+      this.applySelectedStationState(station, {
+        redrawOverlayAndStations: true,
+        fitMapToOverlay: false,
+        savePersistentViewState: false,
+      });
     }
 
     if (sharedState.mapView && this.mapManager && this.mapManager.map) {
