@@ -17,6 +17,7 @@ class LocationManager {
     this.lastNearestStationIndex = null;
     this.visibilityChangeHandler = null;
     this.isRequestInFlight = false;
+    this.watchId = null;
   }
 
   // ボタンを設定
@@ -47,17 +48,13 @@ class LocationManager {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         this.updateLocation(position, true);
-        this.startPeriodicUpdate();
+        this.startLocationUpdates();
       },
       (error) => {
         this.handleError(error);
         this.stopTracking();
       },
-      {
-        enableHighAccuracy: CONFIG.location.enableHighAccuracy,
-        timeout: CONFIG.location.timeout,
-        maximumAge: CONFIG.location.maximumAge
-      }
+      this.getLocationRequestOptions()
     );
   }
 
@@ -67,6 +64,20 @@ class LocationManager {
     this.scheduleNextLocationUpdate();
   }
 
+  startWatchPosition() {
+    this.stopWatchPosition();
+
+    this.watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        this.updateLocation(position, false);
+      },
+      (error) => {
+        console.error('位置情報の監視に失敗しました:', error);
+      },
+      this.getLocationRequestOptions()
+    );
+  }
+
   stopPeriodicUpdate() {
     if (this.locationUpdateTimer) {
       clearTimeout(this.locationUpdateTimer);
@@ -74,12 +85,35 @@ class LocationManager {
     }
   }
 
+  stopWatchPosition() {
+    if (this.watchId != null && navigator.geolocation && typeof navigator.geolocation.clearWatch === 'function') {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+  }
+
+  startLocationUpdates() {
+    this.stopLocationUpdates();
+
+    if (this.shouldUseWatchPosition()) {
+      this.startWatchPosition();
+      return;
+    }
+
+    this.startPeriodicUpdate();
+  }
+
+  stopLocationUpdates() {
+    this.stopPeriodicUpdate();
+    this.stopWatchPosition();
+  }
+
   scheduleNextLocationUpdate() {
     if (!this.isTrackingLocation) {
       return;
     }
 
-    const interval = Math.max(500, Number(CONFIG.location.updateInterval) || 1000);
+    const interval = this.getCurrentUpdateInterval();
     this.locationUpdateTimer = setTimeout(() => {
       this.locationUpdateTimer = null;
 
@@ -110,13 +144,42 @@ class LocationManager {
           console.error('位置情報の取得に失敗しました:', error);
           this.scheduleNextLocationUpdate();
         },
-        {
-          enableHighAccuracy: CONFIG.location.enableHighAccuracy,
-          timeout: CONFIG.location.timeout,
-          maximumAge: CONFIG.location.maximumAge
-        }
+        this.getLocationRequestOptions()
       );
     }, interval);
+  }
+
+  getCurrentUpdateInterval() {
+    const useHighFrequency = this.uiManager && this.uiManager.isHighFrequencyGpsEnabled && this.uiManager.isHighFrequencyGpsEnabled();
+    const rawInterval = useHighFrequency
+      ? CONFIG.location.highFrequencyUpdateInterval
+      : CONFIG.location.updateInterval;
+    return Math.max(500, Number(rawInterval) || 1000);
+  }
+
+  getLocationRequestOptions() {
+    const useHighFrequency = this.uiManager && this.uiManager.isHighFrequencyGpsEnabled && this.uiManager.isHighFrequencyGpsEnabled();
+    const maximumAge = useHighFrequency
+      ? CONFIG.location.highFrequencyMaximumAge
+      : CONFIG.location.maximumAge;
+
+    return {
+      enableHighAccuracy: CONFIG.location.enableHighAccuracy,
+      timeout: CONFIG.location.timeout,
+      maximumAge: Math.max(0, Number(maximumAge) || 0)
+    };
+  }
+
+  handleUpdateModeChange() {
+    if (!this.isTrackingLocation) {
+      return;
+    }
+
+    this.startLocationUpdates();
+  }
+
+  shouldUseWatchPosition() {
+    return Boolean(this.uiManager && this.uiManager.isHighFrequencyGpsEnabled && this.uiManager.isHighFrequencyGpsEnabled());
   }
 
   // 位置情報追跡を停止
@@ -126,7 +189,7 @@ class LocationManager {
       this.button.classList.remove('active');
     }
 
-    this.stopPeriodicUpdate();
+    this.stopLocationUpdates();
     this.unbindVisibilityEvents();
     this.isRequestInFlight = false;
 
@@ -378,22 +441,18 @@ class LocationManager {
       }
 
       if (document.hidden) {
-        this.stopPeriodicUpdate();
-      } else if (!this.locationUpdateTimer) {
+        this.stopLocationUpdates();
+      } else if (!this.locationUpdateTimer && this.watchId == null) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             this.updateLocation(position, false);
-            this.startPeriodicUpdate();
+            this.startLocationUpdates();
           },
           (error) => {
             console.error('位置情報の取得に失敗しました:', error);
-            this.startPeriodicUpdate();
+            this.startLocationUpdates();
           },
-          {
-            enableHighAccuracy: CONFIG.location.enableHighAccuracy,
-            timeout: CONFIG.location.timeout,
-            maximumAge: CONFIG.location.maximumAge
-          }
+          this.getLocationRequestOptions()
         );
       }
     };

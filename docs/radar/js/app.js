@@ -127,6 +127,12 @@ class RadarApp {
       onNearestStationNotifySettingChange: () => {
         this.savePersistentViewState();
       },
+      onHighFrequencyGpsSettingChange: () => {
+        if (this.locationManager) {
+          this.locationManager.handleUpdateModeChange();
+        }
+        this.savePersistentViewState();
+      },
       onStationAttrColorSettingChange: () => {
         const station = this.uiManager.getSelectedStation();
         if (station) {
@@ -227,6 +233,7 @@ class RadarApp {
       stationId: station.id,
       detectionCount,
       nearestStationNotificationEnabled: this.uiManager.isNearestStationNotificationEnabled(),
+      highFrequencyGpsEnabled: this.uiManager.isHighFrequencyGpsEnabled(),
       stationAttrColorEnabled: this.uiManager.isStationAttrColorEnabled(),
       mapView: {
         lat: Number(center.lat),
@@ -282,6 +289,10 @@ class RadarApp {
 
     if (typeof rawState.nearestStationNotificationEnabled === 'boolean') {
       parsed.nearestStationNotificationEnabled = rawState.nearestStationNotificationEnabled;
+    }
+
+    if (typeof rawState.highFrequencyGpsEnabled === 'boolean') {
+      parsed.highFrequencyGpsEnabled = rawState.highFrequencyGpsEnabled;
     }
 
     if (typeof rawState.stationAttrColorEnabled === 'boolean') {
@@ -541,6 +552,10 @@ class RadarApp {
 
     if (typeof sharedState.nearestStationNotificationEnabled === 'boolean') {
       this.uiManager.setNearestStationNotificationEnabled(sharedState.nearestStationNotificationEnabled);
+    }
+
+    if (typeof sharedState.highFrequencyGpsEnabled === 'boolean') {
+      this.uiManager.setHighFrequencyGpsEnabled(sharedState.highFrequencyGpsEnabled);
     }
 
     if (typeof sharedState.stationAttrColorEnabled === 'boolean') {

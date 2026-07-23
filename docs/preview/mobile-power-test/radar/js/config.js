@@ -70,9 +70,11 @@ const CONFIG = {
   // 位置情報取得設定
   location: {
     updateInterval: 3000,     // 位置情報の更新間隔(ms)
+    highFrequencyUpdateInterval: 1000,
     enableHighAccuracy: true,
     timeout: 10000,
     maximumAge: 5000,
+    highFrequencyMaximumAge: 1000,
     pauseWhenHidden: true,
     minDistanceForVisualUpdateMeters: 15,
     minAccuracyDeltaForVisualUpdateMeters: 20
