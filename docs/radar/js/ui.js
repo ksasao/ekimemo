@@ -11,6 +11,8 @@ class UIManager {
     this.notificationReady = false;
     this.audioContext = null;
     this.notificationAudioReady = false;
+    this.notificationAudioElement = null;
+    this.notificationAudioDataUri = './audio/notification-tone.wav';
     
     // DOM要素
     this.searchInput = document.getElementById('searchInput');
@@ -400,10 +402,27 @@ class UIManager {
     });
   }
 
+  initializeNotificationAudio() {
+    if (this.notificationAudioElement) {
+      return this.notificationAudioElement;
+    }
+
+    const audio = new Audio();
+    audio.src = this.notificationAudioDataUri;
+    audio.preload = 'auto';
+    audio.volume = 0.8;
+    audio.setAttribute('playsinline', 'true');
+    audio.setAttribute('webkit-playsinline', 'true');
+    this.notificationAudioElement = audio;
+    return audio;
+  }
+
   async prepareNotificationAudio() {
     if (this.notificationAudioReady) {
       return true;
     }
+
+    this.initializeNotificationAudio();
 
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) {
@@ -428,6 +447,28 @@ class UIManager {
   }
 
   playNotificationSound() {
+    this.initializeNotificationAudio();
+
+    if (this.notificationAudioElement) {
+      try {
+        this.notificationAudioElement.pause();
+        this.notificationAudioElement.currentTime = 0;
+        const playPromise = this.notificationAudioElement.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {
+            this.playNotificationSoundViaWebAudio();
+          });
+        }
+        return;
+      } catch (error) {
+        console.warn('Failed to play notification audio element:', error);
+      }
+    }
+
+    this.playNotificationSoundViaWebAudio();
+  }
+
+  playNotificationSoundViaWebAudio() {
     if (!this.audioContext || !this.notificationAudioReady) {
       return;
     }
