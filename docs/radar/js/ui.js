@@ -13,6 +13,7 @@ class UIManager {
     this.notificationAudioReady = false;
     this.notificationAudioElement = null;
     this.notificationAudioDataUri = './audio/notification-tone.wav';
+    this.audioUnlockBound = false;
     
     // DOM要素
     this.searchInput = document.getElementById('searchInput');
@@ -45,6 +46,7 @@ class UIManager {
     this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
     this.initializeMobileDrawer();
     this.initializeNotificationSupport();
+    this.initializeAudioUnlockListeners();
     if (this.searchClearButton) {
       this.searchClearButton.addEventListener('click', () => {
         this.handleSearchClear();
@@ -402,6 +404,22 @@ class UIManager {
     });
   }
 
+  initializeAudioUnlockListeners() {
+    if (this.audioUnlockBound) {
+      return;
+    }
+
+    const unlockAudio = () => {
+      this.audioUnlockBound = true;
+      void this.prepareNotificationAudio();
+    };
+
+    document.addEventListener('pointerdown', unlockAudio, { once: true });
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+    document.addEventListener('mousedown', unlockAudio, { once: true });
+    document.addEventListener('keydown', unlockAudio, { once: true });
+  }
+
   initializeNotificationAudio() {
     if (this.notificationAudioElement) {
       return this.notificationAudioElement;
@@ -411,6 +429,8 @@ class UIManager {
     audio.src = this.notificationAudioDataUri;
     audio.preload = 'auto';
     audio.volume = 0.8;
+    audio.muted = false;
+    audio.load();
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
     this.notificationAudioElement = audio;
@@ -549,6 +569,24 @@ class UIManager {
     }
   }
 
+  triggerNearestStationSound() {
+    if (!this.isNearestStationNotificationEnabled()) {
+      return;
+    }
+
+    const playSound = () => {
+      void this.prepareNotificationAudio().then(() => {
+        this.playNotificationSound();
+      });
+    };
+
+    if (document.visibilityState === 'hidden' || document.hidden) {
+      window.setTimeout(playSound, 120);
+    } else {
+      playSound();
+    }
+  }
+
   showNearestStationNotification(stationName) {
     if (!this.isNearestStationNotificationEnabled() || !this.nearestStationNotice || !this.nearestStationNoticeText || !stationName) {
       return;
@@ -576,6 +614,8 @@ class UIManager {
     this.nearestStationNoticeTimer = setTimeout(() => {
       this.hideNearestStationNotification();
     }, durationMs);
+
+    this.triggerNearestStationSound();
   }
 
   showNearestStationBrowserNotification(stationName) {
@@ -595,10 +635,6 @@ class UIManager {
       if ('vibrate' in navigator) {
         navigator.vibrate([180, 80, 180]);
       }
-
-      void this.prepareNotificationAudio().then(() => {
-        this.playNotificationSound();
-      });
 
       try {
         const notification = new Notification('最寄り駅が変更されました', {
