@@ -7,6 +7,10 @@ class UIManager {
     this.lastSearchValue = '';
     this.incrementalSearchTimerId = null;
     this.currentLocationRank = null;
+    this.notificationRetryTimer = null;
+    this.notificationReady = false;
+    this.audioContext = null;
+    this.notificationAudioReady = false;
     
     // DOM要素
     this.searchInput = document.getElementById('searchInput');
@@ -22,6 +26,7 @@ class UIManager {
     this.nearestStationNotice = document.getElementById('nearestStationNotice');
     this.nearestStationNoticeText = document.getElementById('nearestStationNoticeText');
     this.nearestStationNoticeTimer = null;
+    this.previewNotificationSoundButton = document.getElementById('previewNotificationSoundBtn');
     this.appContainer = document.getElementById('app');
     this.controlsContainer = document.getElementById('controls');
     this.controlsDrawerToggle = document.getElementById('controlsDrawerToggle');
@@ -37,6 +42,7 @@ class UIManager {
     this.setHighFrequencyGpsEnabled(false);
     this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
     this.initializeMobileDrawer();
+    this.initializeNotificationSupport();
     if (this.searchClearButton) {
       this.searchClearButton.addEventListener('click', () => {
         this.handleSearchClear();
@@ -140,6 +146,7 @@ class UIManager {
       this.nearestStationNotifyToggle.addEventListener('change', async () => {
         if (this.nearestStationNotifyToggle.checked) {
           await this.ensureBrowserNotificationPermission();
+          await this.prepareNotificationAudio();
         }
         if (!this.nearestStationNotifyToggle.checked) {
           this.hideNearestStationNotification();
@@ -163,6 +170,13 @@ class UIManager {
         if (callbacks.onStationAttrColorSettingChange) {
           callbacks.onStationAttrColorSettingChange(this.stationAttrColorToggle.checked);
         }
+      });
+    }
+
+    if (this.previewNotificationSoundButton) {
+      this.previewNotificationSoundButton.addEventListener('click', async () => {
+        await this.prepareNotificationAudio();
+        this.playNotificationSound();
       });
     }
   }
@@ -373,6 +387,101 @@ class UIManager {
     return this.stationAttrColorToggle.checked;
   }
 
+  initializeNotificationSupport() {
+    this.notificationReady = false;
+    if (!('serviceWorker' in navigator) || !window.isSecureContext) {
+      return;
+    }
+
+    navigator.serviceWorker.register('./service-worker.js').then(() => navigator.serviceWorker.ready).then(() => {
+      this.notificationReady = true;
+    }).catch(() => {
+      this.notificationReady = false;
+    });
+  }
+
+  async prepareNotificationAudio() {
+    if (this.notificationAudioReady) {
+      return true;
+    }
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      return false;
+    }
+
+    try {
+      if (!this.audioContext) {
+        this.audioContext = new AudioContextClass();
+      }
+
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+
+      this.notificationAudioReady = true;
+      return true;
+    } catch (error) {
+      console.warn('Failed to prepare notification audio:', error);
+      return false;
+    }
+  }
+
+  playNotificationSound() {
+    if (!this.audioContext || !this.notificationAudioReady) {
+      return;
+    }
+
+    const now = this.audioContext.currentTime;
+    const melody = [
+      { frequency: 440.0, duration: 0.10, delay: 0.00 },
+      { frequency: 349.23, duration: 0.11, delay: 0.10 },
+      { frequency: 523.25, duration: 0.14, delay: 0.22 }
+    ];
+
+    const accompaniment = [
+      { frequency: 261.63, duration: 0.22, delay: 0.00 },
+      { frequency: 196.0, duration: 0.14, delay: 0.10 },
+      { frequency: 392.0, duration: 0.10, delay: 0.22 }
+    ];
+
+    accompaniment.forEach((note) => {
+      const gainNode = this.audioContext.createGain();
+      gainNode.gain.setValueAtTime(0.0001, now + note.delay);
+      gainNode.gain.exponentialRampToValueAtTime(0.036, now + note.delay + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration);
+
+      const oscillator = this.audioContext.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(note.frequency, now + note.delay);
+      oscillator.frequency.exponentialRampToValueAtTime(note.frequency * 0.995, now + note.delay + note.duration);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      oscillator.start(now + note.delay);
+      oscillator.stop(now + note.delay + note.duration + 0.01);
+    });
+
+    melody.forEach((note) => {
+      const gainNode = this.audioContext.createGain();
+      gainNode.gain.setValueAtTime(0.0001, now + note.delay);
+      gainNode.gain.exponentialRampToValueAtTime(0.18, now + note.delay + 0.012);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration);
+
+      const oscillator = this.audioContext.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(note.frequency, now + note.delay);
+      oscillator.frequency.exponentialRampToValueAtTime(note.frequency * 0.995, now + note.delay + note.duration);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(this.audioContext.destination);
+
+      oscillator.start(now + note.delay);
+      oscillator.stop(now + note.delay + note.duration + 0.01);
+    });
+  }
+
   isBrowserNotificationSupported() {
     return window.isSecureContext && typeof Notification !== 'undefined';
   }
@@ -429,7 +538,11 @@ class UIManager {
   }
 
   showNearestStationBrowserNotification(stationName) {
-    if (!stationName || !this.isNearestStationNotificationEnabled() || !this.isBrowserNotificationSupported()) {
+    if (!stationName || !this.isNearestStationNotificationEnabled()) {
+      return;
+    }
+
+    if (!this.isBrowserNotificationSupported()) {
       return;
     }
 
@@ -437,22 +550,57 @@ class UIManager {
       return;
     }
 
-    try {
-      const notification = new Notification('最寄り駅が変更されました', {
-        body: stationName,
-        icon: 'favicon.png',
-        tag: 'nearest-station-changed',
-        renotify: true,
-        silent: false,
+    const showLocalNotification = () => {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([180, 80, 180]);
+      }
+
+      void this.prepareNotificationAudio().then(() => {
+        this.playNotificationSound();
       });
 
-      setTimeout(() => {
-        if (notification && typeof notification.close === 'function') {
-          notification.close();
-        }
-      }, 4500);
-    } catch (error) {
-      console.warn('Failed to show browser notification:', error);
+      try {
+        const notification = new Notification('最寄り駅が変更されました', {
+          body: stationName,
+          icon: 'favicon.png',
+          tag: 'nearest-station-changed',
+          renotify: true,
+          silent: false,
+        });
+
+        setTimeout(() => {
+          if (notification && typeof notification.close === 'function') {
+            notification.close();
+          }
+        }, 4500);
+      } catch (error) {
+        console.warn('Failed to show browser notification:', error);
+      }
+    };
+
+    const showServiceWorkerNotification = () => {
+      if (!this.notificationReady || !('serviceWorker' in navigator)) {
+        return;
+      }
+
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.showNotification('最寄り駅が変更されました', {
+          body: stationName,
+          icon: 'favicon.png',
+          tag: 'nearest-station-changed',
+          renotify: true,
+          requireInteraction: false,
+        });
+      }).catch(() => {
+        showLocalNotification();
+      });
+    };
+
+    if (document.visibilityState === 'hidden' || document.hidden) {
+      showServiceWorkerNotification();
+    } else {
+      showLocalNotification();
+      showServiceWorkerNotification();
     }
   }
 
