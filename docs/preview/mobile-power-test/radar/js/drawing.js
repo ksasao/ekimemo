@@ -1,5 +1,27 @@
 // グリッド描画管理
 
+<<<<<<< HEAD
+=======
+const GRID_RUN_RECT_STYLES = {
+  exact: {
+    pane: 'gridPane',
+    color: '#ff0000',
+    weight: 0,
+    fillColor: '#ff6666',
+    fillOpacity: 0.35,
+    interactive: false,
+  },
+  inner: {
+    pane: 'gridPane',
+    color: '#0000ff',
+    weight: 0,
+    fillColor: '#6666ff',
+    fillOpacity: 0.25,
+    interactive: false,
+  },
+};
+
+>>>>>>> mobile-power-test
 class DrawingManager {
   constructor(map, stationManager) {
     this.map = map;
@@ -138,7 +160,10 @@ class DrawingManager {
     if (!station) return;
 
     const n = Math.max(0, detectionCount);
+<<<<<<< HEAD
     this.currentDrawingGridSize = gridPx;
+=======
+>>>>>>> mobile-power-test
     this.currentDrawingCancelled = false;
 
     // 新しいレイヤーを作成
@@ -162,7 +187,11 @@ class DrawingManager {
         return;
       }
 
+<<<<<<< HEAD
       if (CONFIG.drawing.pauseWhenHidden && document.hidden) {
+=======
+      if (this.shouldPauseDrawingForVisibility()) {
+>>>>>>> mobile-power-test
         const retryDelay = Math.max(250, Number(CONFIG.drawing.hiddenRetryDelay) || 1000);
         this.progressiveDrawTimer = setTimeout(() => {
           this.progressiveDrawTimer = null;
@@ -176,16 +205,34 @@ class DrawingManager {
 
       while (currentY < height && (performance.now() - startTime) < maxTime) {
         const y = currentY;
+<<<<<<< HEAD
+=======
+        const rowCenterY = y + gridPx / 2;
+        const firstCenterX = gridPx / 2;
+        const firstCenterLatLng = this.map.containerPointToLatLng([firstCenterX, rowCenterY]);
+        const nextCenterLatLng = this.map.containerPointToLatLng([firstCenterX + 1, rowCenterY]);
+        const lngStep = nextCenterLatLng.lng - firstCenterLatLng.lng;
+        const rowLat = firstCenterLatLng.lat;
+        const rowLng = firstCenterLatLng.lng;
+>>>>>>> mobile-power-test
         let runType = null;
         let runStartX = 0;
 
         for (let x = 0; x < width; x += gridPx) {
+<<<<<<< HEAD
           const cx = x + gridPx / 2;
           const cy = y + gridPx / 2;
           const latlng = this.map.containerPointToLatLng([cx, cy]);
 
           const cellType = this.classifyCell(
             latlng,
+=======
+          const lng = rowLng + (x * lngStep);
+
+          const cellType = this.classifyCell(
+            rowLat,
+            lng,
+>>>>>>> mobile-power-test
             station,
             n,
             targetLat,
@@ -234,12 +281,21 @@ class DrawingManager {
     requestAnimationFrame(drawNextRows);
   }
 
+<<<<<<< HEAD
   classifyCell(latlng, station, detectionCount, targetLat, targetLng, candidateStations) {
     if (!latlng) return null;
     if (latlng.lng < -180 || latlng.lng > 180) return null;
 
     const dyT = latlng.lat - targetLat;
     const dxT = latlng.lng - targetLng;
+=======
+  classifyCell(lat, lng, station, detectionCount, targetLat, targetLng, candidateStations) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (lng < -180 || lng > 180) return null;
+
+    const dyT = lat - targetLat;
+    const dxT = lng - targetLng;
+>>>>>>> mobile-power-test
     const dTarget2 = dxT * dxT + dyT * dyT;
 
     if (dTarget2 === 0) {
@@ -247,7 +303,12 @@ class DrawingManager {
     }
 
     return this.classifyCellNaive(
+<<<<<<< HEAD
       latlng,
+=======
+      lat,
+      lng,
+>>>>>>> mobile-power-test
       station,
       detectionCount,
       dTarget2,
@@ -255,7 +316,11 @@ class DrawingManager {
     );
   }
 
+<<<<<<< HEAD
   classifyCellNaive(latlng, station, detectionCount, dTarget2, positions) {
+=======
+  classifyCellNaive(lat, lng, station, detectionCount, dTarget2, positions) {
+>>>>>>> mobile-power-test
     const sources = (positions && positions.length)
       ? positions
       : this.stationManager.stationPositions || [];
@@ -265,8 +330,13 @@ class DrawingManager {
       const sp = sources[i];
       if (!sp) continue;
       if (sp.index === station.index) continue;
+<<<<<<< HEAD
       const dy = latlng.lat - sp.lat;
       const dx = latlng.lng - sp.lng;
+=======
+      const dy = lat - sp.lat;
+      const dx = lng - sp.lng;
+>>>>>>> mobile-power-test
       const d2 = dx * dx + dy * dy;
       if (d2 < dTarget2) {
         closerCount++;
@@ -290,6 +360,7 @@ class DrawingManager {
     const nw = this.map.containerPointToLatLng([x0, y0]);
     const se = this.map.containerPointToLatLng([x1, y0 + gridPx]);
 
+<<<<<<< HEAD
     const style = type === 'exact'
       ? {
           pane: 'gridPane',
@@ -307,11 +378,25 @@ class DrawingManager {
           fillOpacity: 0.25,
           interactive: false,
         };
+=======
+    const style = this.getGridRunRectStyle(type);
+>>>>>>> mobile-power-test
 
     const rect = L.rectangle([nw, se], style);
     this.newOverlayLayer.addLayer(rect);
   }
 
+<<<<<<< HEAD
+=======
+  getGridRunRectStyle(type) {
+    return GRID_RUN_RECT_STYLES[type] || GRID_RUN_RECT_STYLES.inner;
+  }
+
+  shouldPauseDrawingForVisibility() {
+    return Boolean(CONFIG.drawing.pauseWhenHidden && document.hidden);
+  }
+
+>>>>>>> mobile-power-test
   // 次のグリッドサイズをスケジュール
   scheduleNextGridSize(currentSize, station, detectionCount) {
     const currentIndex = CONFIG.drawing.gridSizes.indexOf(currentSize);
@@ -323,7 +408,11 @@ class DrawingManager {
     }
 
     this.progressiveDrawTimer = setTimeout(() => {
+<<<<<<< HEAD
       if (!this.map._isInteracting && !(CONFIG.drawing.pauseWhenHidden && document.hidden)) {
+=======
+      if (!this.map._isInteracting && !this.shouldPauseDrawingForVisibility()) {
+>>>>>>> mobile-power-test
         this.drawOverlayWithGridSize(station, detectionCount, nextSize);
       }
     }, CONFIG.drawing.progressiveDelay);

@@ -45,7 +45,7 @@ class LocationManager {
     this.bindVisibilityEvents();
 
     // 初回の位置取得（パンあり）
-    navigator.geolocation.getCurrentPosition(
+    this.requestCurrentPosition(
       (position) => {
         this.updateLocation(position, true);
         this.startLocationUpdates();
@@ -53,8 +53,7 @@ class LocationManager {
       (error) => {
         this.handleError(error);
         this.stopTracking();
-      },
-      this.getLocationRequestOptions()
+      }
     );
   }
 
@@ -133,7 +132,7 @@ class LocationManager {
       }
 
       this.isRequestInFlight = true;
-      navigator.geolocation.getCurrentPosition(
+      this.requestCurrentPosition(
         (position) => {
           this.isRequestInFlight = false;
           this.updateLocation(position, false);
@@ -143,8 +142,7 @@ class LocationManager {
           this.isRequestInFlight = false;
           console.error('位置情報の取得に失敗しました:', error);
           this.scheduleNextLocationUpdate();
-        },
-        this.getLocationRequestOptions()
+        }
       );
     }, interval);
   }
@@ -443,7 +441,7 @@ class LocationManager {
       if (document.hidden) {
         this.stopLocationUpdates();
       } else if (!this.locationUpdateTimer && this.watchId == null) {
-        navigator.geolocation.getCurrentPosition(
+        this.requestCurrentPosition(
           (position) => {
             this.updateLocation(position, false);
             this.startLocationUpdates();
@@ -451,13 +449,27 @@ class LocationManager {
           (error) => {
             console.error('位置情報の取得に失敗しました:', error);
             this.startLocationUpdates();
-          },
-          this.getLocationRequestOptions()
+          }
         );
       }
     };
 
     document.addEventListener('visibilitychange', this.visibilityChangeHandler);
+  }
+
+  requestCurrentPosition(onSuccess, onError) {
+    if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') {
+      if (typeof onError === 'function') {
+        onError(new Error('geolocation unavailable'));
+      }
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      onSuccess,
+      onError,
+      this.getLocationRequestOptions()
+    );
   }
 
   unbindVisibilityEvents() {

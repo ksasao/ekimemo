@@ -45,7 +45,11 @@ class LocationManager {
     this.bindVisibilityEvents();
 
     // 初回の位置取得（パンあり）
+<<<<<<< HEAD
     navigator.geolocation.getCurrentPosition(
+=======
+    this.requestCurrentPosition(
+>>>>>>> mobile-power-test
       (position) => {
         this.updateLocation(position, true);
         this.startLocationUpdates();
@@ -53,8 +57,12 @@ class LocationManager {
       (error) => {
         this.handleError(error);
         this.stopTracking();
+<<<<<<< HEAD
       },
       this.getLocationRequestOptions()
+=======
+      }
+>>>>>>> mobile-power-test
     );
   }
 
@@ -133,7 +141,11 @@ class LocationManager {
       }
 
       this.isRequestInFlight = true;
+<<<<<<< HEAD
       navigator.geolocation.getCurrentPosition(
+=======
+      this.requestCurrentPosition(
+>>>>>>> mobile-power-test
         (position) => {
           this.isRequestInFlight = false;
           this.updateLocation(position, false);
@@ -143,8 +155,12 @@ class LocationManager {
           this.isRequestInFlight = false;
           console.error('位置情報の取得に失敗しました:', error);
           this.scheduleNextLocationUpdate();
+<<<<<<< HEAD
         },
         this.getLocationRequestOptions()
+=======
+        }
+>>>>>>> mobile-power-test
       );
     }, interval);
   }
@@ -443,7 +459,11 @@ class LocationManager {
       if (document.hidden) {
         this.stopLocationUpdates();
       } else if (!this.locationUpdateTimer && this.watchId == null) {
+<<<<<<< HEAD
         navigator.geolocation.getCurrentPosition(
+=======
+        this.requestCurrentPosition(
+>>>>>>> mobile-power-test
           (position) => {
             this.updateLocation(position, false);
             this.startLocationUpdates();
@@ -451,8 +471,12 @@ class LocationManager {
           (error) => {
             console.error('位置情報の取得に失敗しました:', error);
             this.startLocationUpdates();
+<<<<<<< HEAD
           },
           this.getLocationRequestOptions()
+=======
+          }
+>>>>>>> mobile-power-test
         );
       }
     };
@@ -460,6 +484,24 @@ class LocationManager {
     document.addEventListener('visibilitychange', this.visibilityChangeHandler);
   }
 
+<<<<<<< HEAD
+=======
+  requestCurrentPosition(onSuccess, onError) {
+    if (!navigator.geolocation || typeof navigator.geolocation.getCurrentPosition !== 'function') {
+      if (typeof onError === 'function') {
+        onError(new Error('geolocation unavailable'));
+      }
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      onSuccess,
+      onError,
+      this.getLocationRequestOptions()
+    );
+  }
+
+>>>>>>> mobile-power-test
   unbindVisibilityEvents() {
     if (!this.visibilityChangeHandler) {
       return;

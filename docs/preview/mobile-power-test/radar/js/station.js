@@ -248,6 +248,18 @@ class StationManager {
       .filter(name => name !== null);
   }
 
+<<<<<<< HEAD
+=======
+  escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+>>>>>>> mobile-power-test
   // 路線名のHTMLを生成
   getLineNamesHTML(lineCodes) {
     const lineNames = this.getLineNames(lineCodes);
@@ -259,7 +271,11 @@ class StationManager {
     return `
       <div style="font-size: 12px; color: #555; margin-top: 6px; padding-top: 4px; border-top: 1px solid #eee;">
         <div style="font-weight: 600; margin-bottom: 2px;">路線:</div>
+<<<<<<< HEAD
         <div style="line-height: 1.4;">${lineNames.join('、')}</div>
+=======
+        <div style="line-height: 1.4;">${lineNames.map((lineName) => this.escapeHtml(lineName)).join('、')}</div>
+>>>>>>> mobile-power-test
       </div>
     `;
   }

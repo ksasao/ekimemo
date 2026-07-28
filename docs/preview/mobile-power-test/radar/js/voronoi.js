@@ -1,5 +1,22 @@
 // ボロノイ図描画管理（GeoJSONデータを使用）
 
+<<<<<<< HEAD
+=======
+const VORONOI_TOGGLE_STORAGE_KEY = 'voronoiToggleState';
+const VORONOI_POLYLINE_STYLE = {
+  polygon: {
+    color: '#0074D9',
+    weight: 2,
+    opacity: 0.5,
+  },
+  multipolygon: {
+    color: '#888888',
+    weight: 1,
+    opacity: 0.5,
+  },
+};
+
+>>>>>>> mobile-power-test
 class VoronoiManager {
   constructor(map, stationManager) {
     this.map = map;
@@ -15,6 +32,7 @@ class VoronoiManager {
     this.isVisible = !!(CONFIG && CONFIG.voronoi && CONFIG.voronoi.enabled);
     
     // localStorageから状態を復元（保存値があれば最優先）
+<<<<<<< HEAD
     try {
       const savedState = localStorage.getItem('voronoiToggleState');
       if (savedState !== null && (savedState === 'true' || savedState === 'false')) {
@@ -23,6 +41,11 @@ class VoronoiManager {
     } catch (e) {
       // localStorageへのアクセスが拒否された場合はCONFIGの初期値を使用
       console.warn('localStorage access denied:', e);
+=======
+    const savedState = this.loadVisibilityState();
+    if (savedState !== null) {
+      this.isVisible = savedState;
+>>>>>>> mobile-power-test
     }
     
     return this.voronoiLayer;
@@ -33,12 +56,16 @@ class VoronoiManager {
     this.isVisible = !this.isVisible;
     
     // localStorageに状態を保存（エラーハンドリングを追加）
+<<<<<<< HEAD
     try {
       localStorage.setItem('voronoiToggleState', this.isVisible.toString());
     } catch (e) {
       // localStorageへのアクセスが拒否された場合は無視
       console.warn('localStorage access denied:', e);
     }
+=======
+    this.saveVisibilityState(this.isVisible);
+>>>>>>> mobile-power-test
     
     if (this.isVisible) {
       if (!this.voronoiLayer._map) {
@@ -69,6 +96,7 @@ class VoronoiManager {
 
     // 各駅のvoronoiデータを描画
     this.stationManager.stations.forEach((station) => {
+<<<<<<< HEAD
       // voronoiデータが存在しない場合はスキップ
       if (!station.voronoi || !station.voronoi.geometry) {
         return;
@@ -116,6 +144,9 @@ class VoronoiManager {
           }
         });
       }
+=======
+      this.drawStationVoronoiGeometry(station);
+>>>>>>> mobile-power-test
     });
 
     this.hasRendered = true;
@@ -131,4 +162,64 @@ class VoronoiManager {
   getVisibility() {
     return this.isVisible;
   }
+<<<<<<< HEAD
+=======
+
+  loadVisibilityState() {
+    try {
+      const savedState = localStorage.getItem(VORONOI_TOGGLE_STORAGE_KEY);
+      if (savedState === 'true' || savedState === 'false') {
+        return savedState === 'true';
+      }
+    } catch (e) {
+      console.warn('localStorage access denied:', e);
+    }
+
+    return null;
+  }
+
+  saveVisibilityState(value) {
+    try {
+      localStorage.setItem(VORONOI_TOGGLE_STORAGE_KEY, String(Boolean(value)));
+    } catch (e) {
+      console.warn('localStorage access denied:', e);
+    }
+  }
+
+  drawStationVoronoiGeometry(station) {
+    // voronoiデータが存在しない場合はスキップ
+    if (!station || !station.voronoi || !station.voronoi.geometry) {
+      return;
+    }
+
+    const geometry = station.voronoi.geometry;
+    if (geometry.type === 'Polygon' && geometry.coordinates && geometry.coordinates.length > 0) {
+      this.drawVoronoiPolygon(geometry.coordinates[0], VORONOI_POLYLINE_STYLE.polygon);
+      return;
+    }
+
+    if (geometry.type === 'MultiPolygon' && geometry.coordinates) {
+      geometry.coordinates.forEach((polygon) => {
+        this.drawVoronoiPolygon(polygon[0], VORONOI_POLYLINE_STYLE.multipolygon);
+      });
+    }
+  }
+
+  drawVoronoiPolygon(coords, style) {
+    if (!coords || coords.length < 3) {
+      return;
+    }
+
+    const latlngs = coords.map((coord) => [coord[1], coord[0]]);
+    const polyline = L.polyline(latlngs, {
+      color: style.color,
+      weight: style.weight,
+      opacity: style.opacity,
+      pane: 'voronoiPane',
+      interactive: false
+    });
+
+    this.voronoiLayer.addLayer(polyline);
+  }
+>>>>>>> mobile-power-test
 }
