@@ -6,7 +6,7 @@ from pathlib import Path
 sample_rate = 22050
 
 
-def synth(freq, duration, start=0.0, volume=0.9, fade_out_duration=0.04):
+def synth(freq, duration, start=0.0, volume=0.9, fade_out_duration=0.06):
     n = int(sample_rate * duration)
     fade_out_samples = int(sample_rate * fade_out_duration)
     out = []
@@ -36,11 +36,24 @@ def append_tail(samples, duration=0.30):
         samples.append(int(last_value * fade))
 
 
+def apply_reverb(samples, delay=2200, feedback=0.15):
+    if not samples:
+        return samples
+
+    output = list(samples)
+    for i in range(len(samples)):
+        if i >= delay:
+            delayed = output[i - delay]
+            output[i] = int(output[i] * (1.0 - feedback) + delayed * feedback)
+    return output
+
+
 samples = []
 for note, dur, start, vol in [(440.0, 0.10, 0.00, 0.95), (349.23, 0.11, 0.10, 0.9), (523.25, 0.14, 0.22, 0.95)]:
     samples.extend(synth(note, dur, start=start, volume=vol, fade_out_duration=0.04))
 
 append_tail(samples, duration=0.30)
+samples = apply_reverb(samples, delay=2200, feedback=0.15)
 
 out_path = Path(__file__).with_name('notification-tone.wav')
 with wave.open(str(out_path), 'wb') as wf:
