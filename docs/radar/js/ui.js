@@ -494,6 +494,7 @@ class UIManager {
     }
 
     const now = this.audioContext.currentTime;
+    const fadeOutDuration = 0.035;
     const melody = [
       { frequency: 440.0, duration: 0.10, delay: 0.00 },
       { frequency: 349.23, duration: 0.11, delay: 0.10 },
@@ -510,7 +511,7 @@ class UIManager {
       const gainNode = this.audioContext.createGain();
       gainNode.gain.setValueAtTime(0.0001, now + note.delay);
       gainNode.gain.exponentialRampToValueAtTime(0.036, now + note.delay + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration + fadeOutDuration);
 
       const oscillator = this.audioContext.createOscillator();
       oscillator.type = 'sine';
@@ -521,14 +522,14 @@ class UIManager {
       gainNode.connect(this.audioContext.destination);
 
       oscillator.start(now + note.delay);
-      oscillator.stop(now + note.delay + note.duration + 0.01);
+      oscillator.stop(now + note.delay + note.duration + fadeOutDuration + 0.005);
     });
 
     melody.forEach((note) => {
       const gainNode = this.audioContext.createGain();
       gainNode.gain.setValueAtTime(0.0001, now + note.delay);
       gainNode.gain.exponentialRampToValueAtTime(0.18, now + note.delay + 0.012);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration);
+      gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration + fadeOutDuration);
 
       const oscillator = this.audioContext.createOscillator();
       oscillator.type = 'sine';
@@ -539,12 +540,29 @@ class UIManager {
       gainNode.connect(this.audioContext.destination);
 
       oscillator.start(now + note.delay);
-      oscillator.stop(now + note.delay + note.duration + 0.01);
+      oscillator.stop(now + note.delay + note.duration + fadeOutDuration + 0.005);
     });
   }
 
   isBrowserNotificationSupported() {
     return window.isSecureContext && typeof Notification !== 'undefined';
+  }
+
+  isIosHomeScreenStandalone() {
+    const ua = navigator.userAgent || '';
+    const isIosByUA = /iPhone|iPad|iPod/i.test(ua);
+    const isIpadDesktopMode = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    const isIos = isIosByUA || isIpadDesktopMode;
+
+    if (!isIos) {
+      return false;
+    }
+
+    const isStandaloneByNavigator = typeof navigator.standalone === 'boolean' && navigator.standalone;
+    const isStandaloneByDisplayMode = typeof window.matchMedia === 'function'
+      && window.matchMedia('(display-mode: standalone)').matches;
+
+    return isStandaloneByNavigator || isStandaloneByDisplayMode;
   }
 
   async ensureBrowserNotificationPermission() {
@@ -631,6 +649,8 @@ class UIManager {
       return;
     }
 
+    const preferOsNotificationOnly = this.isIosHomeScreenStandalone();
+
     const showLocalNotification = () => {
       if ('vibrate' in navigator) {
         navigator.vibrate([180, 80, 180]);
@@ -655,7 +675,9 @@ class UIManager {
       }
     };
 
-    const showServiceWorkerNotification = () => {
+    const showServiceWorkerNotification = (options = {}) => {
+      const allowLocalFallback = options.allowLocalFallback !== false;
+
       if (!this.notificationReady || !('serviceWorker' in navigator)) {
         return;
       }
@@ -669,9 +691,16 @@ class UIManager {
           requireInteraction: false,
         });
       }).catch(() => {
-        showLocalNotification();
+        if (allowLocalFallback) {
+          showLocalNotification();
+        }
       });
     };
+
+    if (preferOsNotificationOnly) {
+      showServiceWorkerNotification({ allowLocalFallback: false });
+      return;
+    }
 
     if (document.visibilityState === 'hidden' || document.hidden) {
       showServiceWorkerNotification();
