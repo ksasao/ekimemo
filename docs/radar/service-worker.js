@@ -1,9 +1,11 @@
-const CACHE_NAME = 'radar-notify-v1';
+const CACHE_NAME = 'radar-notify-v2';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './manifest.json',
   './favicon.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   './css/styles.css',
   './js/config.js',
   './js/kdtree.js',
@@ -18,7 +20,27 @@ const PRECACHE_URLS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      const failedUrls = [];
+
+      await Promise.all(PRECACHE_URLS.map(async (url) => {
+        try {
+          await cache.add(url);
+        } catch (error) {
+          failedUrls.push(url);
+          console.error('[SW] precache failed:', url, error);
+        }
+      }));
+
+      if (failedUrls.length > 0) {
+        console.warn('[SW] precache completed with failures:', failedUrls);
+      }
+
+      await self.skipWaiting();
+    }).catch((error) => {
+      console.error('[SW] install failed:', error);
+      throw error;
+    })
   );
 });
 

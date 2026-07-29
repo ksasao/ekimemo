@@ -393,14 +393,24 @@ class UIManager {
 
   initializeNotificationSupport() {
     this.notificationReady = false;
-    if (!('serviceWorker' in navigator) || !window.isSecureContext) {
+    if (!('serviceWorker' in navigator)) {
+      console.warn('[PWA] Service Worker is not supported in this browser.');
       return;
     }
 
-    navigator.serviceWorker.register('./service-worker.js').then(() => navigator.serviceWorker.ready).then(() => {
+    if (!window.isSecureContext) {
+      console.warn('[PWA] Secure context is required for Service Worker registration.');
+      return;
+    }
+
+    navigator.serviceWorker.register('./service-worker.js').then((registration) => {
+      console.info('[PWA] Service Worker registered:', registration.scope);
+      return navigator.serviceWorker.ready;
+    }).then(() => {
       this.notificationReady = true;
-    }).catch(() => {
+    }).catch((error) => {
       this.notificationReady = false;
+      console.error('[PWA] Service Worker registration failed:', error);
     });
   }
 
