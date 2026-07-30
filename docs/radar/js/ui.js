@@ -9,6 +9,7 @@ class UIManager {
     this.currentLocationRank = null;
     this.notificationRetryTimer = null;
     this.notificationReady = false;
+    this.notificationReadyPromise = Promise.resolve(null);
     this.audioContext = null;
     this.notificationAudioReady = false;
     this.notificationAudioElement = null;
@@ -395,22 +396,26 @@ class UIManager {
     this.notificationReady = false;
     if (!('serviceWorker' in navigator)) {
       console.warn('[PWA] Service Worker is not supported in this browser.');
+      this.notificationReadyPromise = Promise.resolve(null);
       return;
     }
 
     if (!window.isSecureContext) {
       console.warn('[PWA] Secure context is required for Service Worker registration.');
+      this.notificationReadyPromise = Promise.resolve(null);
       return;
     }
 
-    navigator.serviceWorker.register('./service-worker.js').then((registration) => {
+    this.notificationReadyPromise = navigator.serviceWorker.register('./service-worker.js').then((registration) => {
       console.info('[PWA] Service Worker registered:', registration.scope);
       return navigator.serviceWorker.ready;
     }).then(() => {
       this.notificationReady = true;
+      return navigator.serviceWorker.ready;
     }).catch((error) => {
       this.notificationReady = false;
       console.error('[PWA] Service Worker registration failed:', error);
+      return null;
     });
   }
 
@@ -418,6 +423,7 @@ class UIManager {
     if (this.audioUnlockBound) {
       return;
     }
+    
 
     const unlockAudio = () => {
       this.audioUnlockBound = true;
@@ -688,11 +694,15 @@ class UIManager {
     const showServiceWorkerNotification = (options = {}) => {
       const allowLocalFallback = options.allowLocalFallback !== false;
 
-      if (!this.notificationReady || !('serviceWorker' in navigator)) {
+      if (!('serviceWorker' in navigator)) {
         return;
       }
 
-      navigator.serviceWorker.ready.then((registration) => {
+      this.notificationReadyPromise.then((registration) => {
+        if (!registration) {
+          throw new Error('Service Worker is not ready.');
+        }
+
         registration.showNotification('最寄り駅が変更されました', {
           body: stationName,
           icon: 'favicon.png',
@@ -700,7 +710,8 @@ class UIManager {
           renotify: true,
           requireInteraction: false,
         });
-      }).catch(() => {
+      }).catch((error) => {
+        console.warn('[PWA] Service Worker notification failed:', error);
         if (allowLocalFallback) {
           showLocalNotification();
         }
