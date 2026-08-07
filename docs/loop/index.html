@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>heat/cool/eco 近接駅マップ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", sans-serif; }
+  #map { position: absolute; top: 48px; left: 0; right: 0; bottom: 0; }
+  #header {
+    height: 48px; display: flex; align-items: center; gap: 16px;
+    padding: 0 12px; background: #1f2937; color: #fff; box-sizing: border-box;
+  }
+  #header h1 { font-size: 15px; margin: 0; font-weight: 600; white-space: nowrap; }
+  #header .count { font-size: 13px; color: #d1d5db; }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .popup-content { font-size: 13px; max-height: 260px; overflow-y: auto; }
+  .popup-content h3 { margin: 0 0 6px 0; font-size: 13px; }
+  .popup-block { border-top: 1px solid #e5e7eb; padding-top: 6px; margin-top: 6px; }
+  .popup-block:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .attr-badge {
+    display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px;
+    color: #fff; margin-left: 4px;
+  }
+  .attr-heat { background: #dc2626; }
+  .attr-cool { background: #2563eb; }
+  .attr-eco  { background: #16a34a; }
+  .attr-unknown { background: #6b7280; }
+  ul.neighbor-list { margin: 4px 0 0 0; padding-left: 16px; }
+  #legend {
+    position: absolute; z-index: 1000; bottom: 24px; left: 12px;
+    background: #fff; padding: 8px 12px; border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3); font-size: 12px; line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>200m以内に5駅以上集まる駅頂点(廃駅・unknown除外・近傍集約)</h1>
+  <span class="count" id="count"></span>
+</div>
+<div id="map">
+  <div id="legend">
+    <div><span class="legend-dot" style="background:#dc2626"></span>heat</div>
+    <div><span class="legend-dot" style="background:#2563eb"></span>cool</div>
+    <div><span class="legend-dot" style="background:#16a34a"></span>eco</div>
+    <div><span class="legend-dot" style="background:#6b7280"></span>unknown</div>
+    <div><span class="legend-dot" style="background:#facc15;border:1px solid #111827"></span>該当地点</div>
+    <div><span style="color:#ffea00;font-size:16px;text-shadow:-1px 0 #111827,1px 0 #111827,0 -1px #111827,0 1px #111827;">★</span> 候補地</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="points.js?v=3"></script>
+<script src="stations_geo.js?v=3"></script>
+<script src="recommended_spots.js?v=6"></script>
+<script>
+  const ATTR_COLOR = {
+    heat: '#dc2626',
+    cool: '#2563eb',
+    eco:  '#16a34a',
+    unknown: '#6b7280'
+  };
+
+  function attrBadge(attr) {
+    return `<span class="attr-badge attr-${attr}">${attr}</span>`;
+  }
+
+  function buildPopup(entry) {
+    let html = '<div class="popup-content">';
+    html += `<h3>${entry.count} 駅がこの地点(200m圏内)に集約されました</h3>`;
+    html += '<ul class="neighbor-list">';
+    for (const st of entry.stations) {
+      html += `<li>${st.name}${attrBadge(st.attr)}</li>`;
+    }
+    html += '</ul></div>';
+    return html;
+  }
+
+  const map = L.map('map', { renderer: L.canvas() });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 駅の Voronoi 境界(多角形/境界線)レイヤー
+  const boundaryLayer = L.geoJSON(STATION_GEOJSON, {
+    renderer: L.canvas(),
+    style: (feature) => {
+      const attr = feature.properties.attr;
+      const closed = feature.properties.closed;
+      const color = ATTR_COLOR[attr] || ATTR_COLOR.unknown;
+      return {
+        color: color,
+        weight: 1,
+        opacity: closed ? 0.35 : 0.7,
+        fill: feature.geometry.type === 'Polygon',
+        fillColor: color,
+        fillOpacity: closed ? 0.04 : 0.12
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const p = feature.properties;
+      layer.bindPopup(
+        `<div class="popup-content"><strong>${p.name}</strong>${attrBadge(p.attr)}${p.closed ? ' (廃駅)' : ''}</div>`
+      );
+    }
+  }).addTo(map);
+
+  // 条件を満たした地点(200m以内に5駅以上集まる頂点)レイヤー
+  const cluster = L.markerClusterGroup({ maxClusterRadius: 40 });
+  const bounds = [];
+
+  for (const entry of STATION_POINTS) {
+    const marker = L.circleMarker([entry.lat, entry.lng], {
+      radius: 7,
+      color: '#111827',
+      weight: 1,
+      fillColor: '#facc15',
+      fillOpacity: 0.9
+    });
+    marker.bindPopup(buildPopup(entry));
+    cluster.addLayer(marker);
+    bounds.push([entry.lat, entry.lng]);
+  }
+
+  cluster.addTo(map);
+
+  // 候補地(非住宅地と目視確認済み)レイヤー
+  const recommendedIcon = L.divIcon({
+    className: '',
+    html: '<div style="font-size:32px;line-height:32px;color:#ffea00;' +
+      'text-shadow:-2px -2px 0 #111827,2px -2px 0 #111827,-2px 2px 0 #111827,2px 2px 0 #111827,' +
+      '-2px 0 0 #111827,2px 0 0 #111827,0 -2px 0 #111827,0 2px 0 #111827,0 0 6px rgba(255,234,0,0.8);">★</div>',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -14]
+  });
+  const TIER_LABEL = {
+    1: "実際に池・堀を周回できる",
+    2: "動物園・大学キャンパス等",
+    3: "都市公園・神宮外苑",
+    4: "山林・ハイキングエリア",
+    5: "農地・田園地帯",
+    6: "官庁街等(住宅なし)",
+    7: "特に目立った特徴なし"
+  };
+  const recommendedLayer = L.layerGroup();
+  for (const spot of (typeof RECOMMENDED_SPOTS !== 'undefined' ? RECOMMENDED_SPOTS : [])) {
+    const marker = L.marker([spot.lat, spot.lng], { icon: recommendedIcon, zIndexOffset: 1000 });
+    const stationList = spot.stations.map(s => `<li>${s}</li>`).join('');
+    const tierLabel = TIER_LABEL[spot.tier] || '';
+    marker.bindPopup(
+      `<div class="popup-content"><h3>${spot.name}</h3>` +
+      `<div style="color:#6b7280;font-size:11px;margin-bottom:4px;">${tierLabel}</div>` +
+      `<div>${spot.note}</div>` +
+      `<ul class="neighbor-list">${stationList}</ul></div>`
+    );
+    recommendedLayer.addLayer(marker);
+  }
+  recommendedLayer.addTo(map);
+
+  L.control.layers(null, {
+    '駅の境界線 (Voronoi)': boundaryLayer,
+    '条件を満たす地点': cluster,
+    '候補地': recommendedLayer
+  }, { collapsed: false }).addTo(map);
+
+  L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
+
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [20, 20] });
+  } else {
+    map.setView([36.5, 138], 5);
+  }
+
+  document.getElementById('count').textContent =
+    `該当地点数: ${STATION_POINTS.length.toLocaleString()} / 駅数: ${STATION_GEOJSON.features.length.toLocaleString()}`;
+</script>
+
+</body>
+</html>
