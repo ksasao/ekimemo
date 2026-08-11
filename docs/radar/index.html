@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#1976d2" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json?v=20260811c" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://*.tile.openstreetmap.org; connect-src 'self' https://unpkg.com; font-src 'self' data:; base-uri 'self'; form-action 'self';">
 
   <!-- Leaflet -->
@@ -20,7 +20,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=20260811c" />
 </head>
 
 <body>
@@ -95,6 +95,17 @@
               <input type="checkbox" id="stationAttrColorToggle" style="width: auto; cursor: pointer;" />
               <label for="stationAttrColorToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">駅属性で塗り分け</label>
             </div>
+            <div class="setting-check-wrap">
+              <input type="checkbox" id="stationMemoLabelToggle" style="width: auto; cursor: pointer;" />
+              <label for="stationMemoLabelToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">メモを地図上に表示</label>
+            </div>
+            <div class="setting-check-wrap">
+              <button id="exportStationMemosBtn" class="icon-text-btn" type="button" aria-label="メモをCSVでエクスポート" title="メモをCSVでエクスポート">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3c.55 0 1 .45 1 1v8.59l2.3-2.3a1 1 0 1 1 1.4 1.42l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.42l2.3 2.3V4c0-.55.45-1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1Z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -114,15 +125,15 @@
   </div>
 
   <!-- JavaScript modules -->
-  <script src="js/config.js"></script>
-  <script src="js/kdtree.js"></script>
-  <script src="js/station.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/location.js"></script>
-  <script src="js/drawing.js"></script>
-  <script src="js/voronoi.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/config.js?v=20260811c"></script>
+  <script src="js/kdtree.js?v=20260811c"></script>
+  <script src="js/station.js?v=20260811c"></script>
+  <script src="js/map.js?v=20260811c"></script>
+  <script src="js/location.js?v=20260811c"></script>
+  <script src="js/drawing.js?v=20260811c"></script>
+  <script src="js/voronoi.js?v=20260811c"></script>
+  <script src="js/ui.js?v=20260811c"></script>
+  <script src="js/app.js?v=20260811c"></script>
 </body>
 
 </html>

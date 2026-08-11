@@ -26,6 +26,8 @@ class UIManager {
     this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
     this.highFrequencyGpsToggle = document.getElementById('highFrequencyGpsToggle');
     this.stationAttrColorToggle = document.getElementById('stationAttrColorToggle');
+    this.stationMemoLabelToggle = document.getElementById('stationMemoLabelToggle');
+    this.exportStationMemosButton = document.getElementById('exportStationMemosBtn');
     this.selectedStationLabel = document.getElementById('selectedStationLabel');
     this.nearestStationNotice = document.getElementById('nearestStationNotice');
     this.nearestStationNoticeText = document.getElementById('nearestStationNoticeText');
@@ -37,6 +39,7 @@ class UIManager {
     this.controlsDrawerCloseButton = document.getElementById('controlsDrawerCloseBtn');
     this.mobileDrawerMediaQuery = window.matchMedia('(max-width: 639px)');
     this.isMobileDrawerOpen = false;
+    this.lastExportTriggerAt = 0;
   }
 
   // UI要素を初期化
@@ -45,6 +48,7 @@ class UIManager {
     this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
     this.setHighFrequencyGpsEnabled(false);
     this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
+    this.setStationMemoLabelEnabled(true);
     this.initializeMobileDrawer();
     this.initializeNotificationSupport();
     this.initializeAudioUnlockListeners();
@@ -175,6 +179,49 @@ class UIManager {
         if (callbacks.onStationAttrColorSettingChange) {
           callbacks.onStationAttrColorSettingChange(this.stationAttrColorToggle.checked);
         }
+      });
+    }
+
+    if (this.stationMemoLabelToggle) {
+      this.stationMemoLabelToggle.addEventListener('change', () => {
+        if (callbacks.onStationMemoLabelSettingChange) {
+          callbacks.onStationMemoLabelSettingChange(this.stationMemoLabelToggle.checked);
+        }
+      });
+    }
+
+    if (this.exportStationMemosButton) {
+      const triggerExport = () => {
+        const now = Date.now();
+        if (now - this.lastExportTriggerAt < 400) {
+          return;
+        }
+        this.lastExportTriggerAt = now;
+        if (callbacks.onExportStationMemosClick) {
+          callbacks.onExportStationMemosClick();
+        }
+      };
+
+      this.exportStationMemosButton.addEventListener('click', () => {
+        triggerExport();
+      });
+
+      this.exportStationMemosButton.addEventListener('touchend', (event) => {
+        event.preventDefault();
+        triggerExport();
+      }, { passive: false });
+
+      this.exportStationMemosButton.addEventListener('pointerup', (event) => {
+        event.preventDefault();
+        triggerExport();
+      });
+
+      this.exportStationMemosButton.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') {
+          return;
+        }
+        event.preventDefault();
+        triggerExport();
       });
     }
 
@@ -390,6 +437,20 @@ class UIManager {
       return Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault);
     }
     return this.stationAttrColorToggle.checked;
+  }
+
+  setStationMemoLabelEnabled(enabled) {
+    if (!this.stationMemoLabelToggle) {
+      return;
+    }
+    this.stationMemoLabelToggle.checked = Boolean(enabled);
+  }
+
+  isStationMemoLabelEnabled() {
+    if (!this.stationMemoLabelToggle) {
+      return true;
+    }
+    return this.stationMemoLabelToggle.checked;
   }
 
   initializeNotificationSupport() {
@@ -758,9 +819,11 @@ class UIManager {
         this.isMobileDrawerOpen = true;
         this.appContainer.classList.remove('controls-open');
         this.controlsContainer.classList.remove('is-collapsed-mobile');
+        this.controlsDrawerToggle.style.display = 'none';
         this.controlsDrawerToggle.setAttribute('aria-expanded', 'false');
         this.controlsDrawerToggle.textContent = '条件を表示';
         this.controlsDrawerToggle.setAttribute('aria-label', '条件を開く');
+        this.controlsDrawerCloseButton.style.display = 'none';
         this.controlsDrawerCloseButton.setAttribute('aria-expanded', 'true');
         this.controlsDrawerCloseButton.textContent = '×';
         this.controlsDrawerCloseButton.setAttribute('aria-label', '条件を閉じる');
@@ -800,6 +863,8 @@ class UIManager {
     this.isMobileDrawerOpen = true;
     this.appContainer.classList.add('controls-open');
     this.controlsContainer.classList.remove('is-collapsed-mobile');
+    this.controlsDrawerToggle.style.display = 'none';
+    this.controlsDrawerCloseButton.style.display = 'inline-flex';
     this.controlsDrawerToggle.setAttribute('aria-expanded', 'true');
     this.controlsDrawerToggle.textContent = '条件を表示';
     this.controlsDrawerToggle.setAttribute('aria-label', '条件を開く');
@@ -816,6 +881,8 @@ class UIManager {
     this.isMobileDrawerOpen = false;
     this.appContainer.classList.remove('controls-open');
     this.controlsContainer.classList.add('is-collapsed-mobile');
+    this.controlsDrawerToggle.style.display = 'inline-flex';
+    this.controlsDrawerCloseButton.style.display = 'none';
     this.controlsDrawerToggle.setAttribute('aria-expanded', 'false');
     this.controlsDrawerToggle.textContent = '条件を表示';
     this.controlsDrawerToggle.setAttribute('aria-label', '条件を開く');

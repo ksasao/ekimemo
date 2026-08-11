@@ -140,6 +140,24 @@ class RadarApp {
         }
         this.updateStationDots();
         this.savePersistentViewState();
+      },
+      onStationMemoLabelSettingChange: () => {
+        const station = this.uiManager.getSelectedStation();
+        if (station) {
+          this.mapManager.placeStationMarker(station, false);
+        }
+        this.updateStationDots();
+        this.savePersistentViewState();
+      },
+      onExportStationMemosClick: () => {
+        if (!this.mapManager || typeof this.mapManager.exportStationMemosAsCsv !== 'function') {
+          return;
+        }
+
+        const exportedCount = this.mapManager.exportStationMemosAsCsv();
+        if (exportedCount <= 0) {
+          alert('エクスポート対象のメモがありません。');
+        }
       }
     });
 
@@ -260,6 +278,7 @@ class RadarApp {
       nearestStationNotificationEnabled: this.uiManager.isNearestStationNotificationEnabled(),
       highFrequencyGpsEnabled: this.uiManager.isHighFrequencyGpsEnabled(),
       stationAttrColorEnabled: this.uiManager.isStationAttrColorEnabled(),
+      stationMemoLabelEnabled: this.uiManager.isStationMemoLabelEnabled(),
       mapView: {
         lat: Number(center.lat),
         lng: Number(center.lng),
@@ -322,6 +341,10 @@ class RadarApp {
 
     if (typeof rawState.stationAttrColorEnabled === 'boolean') {
       parsed.stationAttrColorEnabled = rawState.stationAttrColorEnabled;
+    }
+
+    if (typeof rawState.stationMemoLabelEnabled === 'boolean') {
+      parsed.stationMemoLabelEnabled = rawState.stationMemoLabelEnabled;
     }
 
     return Object.keys(parsed).length > 0 ? parsed : null;
@@ -585,6 +608,10 @@ class RadarApp {
 
     if (typeof sharedState.stationAttrColorEnabled === 'boolean') {
       this.uiManager.setStationAttrColorEnabled(sharedState.stationAttrColorEnabled);
+    }
+
+    if (typeof sharedState.stationMemoLabelEnabled === 'boolean') {
+      this.uiManager.setStationMemoLabelEnabled(sharedState.stationMemoLabelEnabled);
     }
 
     const station = this.uiManager.getSelectedStation();

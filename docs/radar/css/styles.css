@@ -194,6 +194,77 @@ body {
   gap: 6px;
 }
 
+.icon-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: #fff;
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.icon-text-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
+.icon-text-btn .icon-glyph {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+#exportStationMemosBtn {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  border-radius: 0;
+  border: none;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  color: #1158a8;
+  background-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+}
+
+#exportStationMemosBtn:hover {
+  box-shadow: none;
+}
+
+#exportStationMemosBtn:active {
+  transform: translateY(1px);
+  background: transparent;
+}
+
+#exportStationMemosBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
 .search-input-wrap {
   position: relative;
 }

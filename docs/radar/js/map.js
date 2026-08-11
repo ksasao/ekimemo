@@ -5,6 +5,34 @@ const STATION_POPUP_TITLE_STYLE = 'font-size: 16px; font-weight: 700; margin-bot
 const STATION_POPUP_KANA_STYLE = 'font-size: 13px; color: #666; margin-bottom: 6px;';
 const STATION_POPUP_PREFECTURE_STYLE = 'font-size: 13px; color: #444; border-top: 1px solid #ddd; padding-top: 4px; margin-bottom: 4px;';
 const STATION_POPUP_SELECTED_STYLE = 'font-size: 12px; color: #888; margin-top: 6px; padding-top: 4px; border-top: 1px solid #eee;';
+const STATION_POPUP_MEMO_SECTION_STYLE = 'margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;';
+const STATION_POPUP_MEMO_LABEL_STYLE = 'display: block; font-size: 12px; font-weight: 600; color: #444; margin-bottom: 4px;';
+const STATION_POPUP_MEMO_TEXTAREA_STYLE = 'display: block; width: 100%; min-height: 58px; box-sizing: border-box; resize: vertical; border: 1px solid #c9d2e3; border-radius: 6px; padding: 6px 8px; font-size: 16px; line-height: 1.4; font-family: inherit;';
+const STATION_POPUP_MEMO_HEADER_STYLE = 'display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;';
+const STATION_POPUP_MEMO_META_STYLE = 'display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px;';
+const STATION_POPUP_MEMO_STATUS_STYLE = 'font-size: 11px; color: #666;';
+const STATION_POPUP_MEMO_SAVE_BUTTON_STYLE = [
+  'display: inline-block',
+  'padding: 5px 10px',
+  'border: 0',
+  'border-radius: 6px',
+  'background: #e8f0fe',
+  'color: #174ea6',
+  'font-size: 12px',
+  'font-weight: 600',
+  'cursor: pointer'
+].join('; ');
+const STATION_POPUP_MEMO_DELETE_BUTTON_STYLE = [
+  'display: inline-block',
+  'padding: 4px 8px',
+  'border: 1px solid #d0d7e2',
+  'border-radius: 6px',
+  'background: #fff5f5',
+  'color: #b42318',
+  'font-size: 12px',
+  'font-weight: 600',
+  'cursor: pointer'
+].join('; ');
 const STATION_POPUP_ACTION_WRAPPER_STYLE = 'margin-top: 8px;';
 const STATION_POPUP_ACTION_STYLE = [
   'display: inline-block',
@@ -19,6 +47,10 @@ const STATION_POPUP_ACTION_STYLE = [
   'box-shadow: 0 2px 4px rgba(23, 93, 220, 0.3)',
   'transition: transform 0.1s ease, box-shadow 0.1s ease'
 ].join('; ');
+const STATION_MEMO_STORAGE_KEY = 'stationPopupMemos';
+const STATION_MEMO_MAX_LENGTH = 120;
+const STATION_MEMO_LABEL_COLOR = '#7C3AED';
+const STATION_MEMO_EXPORT_HEADERS = ['最終更新日', '駅名', 'メモ本文'];
 const STATION_LABEL_BASE_STYLE = [
   'width: 200px',
   'margin-top: 8px',
@@ -38,6 +70,7 @@ class MapManager {
     this.stationDotsLayer = null;
     this.stationMarker = null;
     this.stationMarkerLabel = null;
+    this.stationMarkerMemoLabel = null;
     this.isUserInteracting = false;
     this.locationManager = null;
     this.mapMoveStartCenter = null;
@@ -105,6 +138,7 @@ class MapManager {
     this.lastUserOpenedStationIndex = null;
     this.currentHighlightRanks = new Map();
     this.lastStationLabelOpenAt = 0;
+    this.stationMemoCache = this.loadStationMemoCache();
 
     this.map.on('click', (event) => this.handleMapClick(event));
 
@@ -230,6 +264,8 @@ class MapManager {
         interactive: false
       }).addTo(this.map);
     }
+
+    this.updateSelectedStationMemoLabel(station, latlng);
   }
 
   // 画面内の駅ドットを更新
@@ -302,6 +338,24 @@ class MapManager {
         this.attachStationPopupHandlers(circle);
         
         this.stationDotsLayer.addLayer(circle);
+
+        const memoLabelIcon = this.isStationMemoLabelEnabled()
+          ? this.createStationMemoLabelIcon(this.getStationMemoFirstCharacter(s.id), {
+              color: STATION_MEMO_LABEL_COLOR,
+            })
+          : null;
+        if (memoLabelIcon) {
+          const memoLabel = L.marker([s.lat, s.lng], {
+            icon: memoLabelIcon,
+            pane: 'stationDotsPane',
+            interactive: true,
+            bubblingMouseEvents: false,
+          });
+          memoLabel.stationIndex = s.index;
+          memoLabel.isStationMemoLabel = true;
+          this.attachStationLabelInteraction(memoLabel);
+          this.stationDotsLayer.addLayer(memoLabel);
+        }
         
         // 駅名ラベル
         if (shouldShowLabels) {
@@ -563,17 +617,17 @@ class MapManager {
       }
       this.lastStationLabelOpenAt = now;
 
-      const stationDot = this.findStationDotLayerByIndex(labelLayer.stationIndex);
-      if (!stationDot || !stationDot.getPopup) {
+      const popupLayer = this.findStationPopupLayerByIndex(labelLayer.stationIndex);
+      if (!popupLayer || !popupLayer.getPopup) {
         return;
       }
 
-      const popup = stationDot.getPopup();
+      const popup = popupLayer.getPopup();
       if (!popup) {
         return;
       }
 
-      stationDot.openPopup();
+      popupLayer.openPopup();
       this.lastUserOpenedStationIndex = labelLayer.stationIndex;
     };
 
@@ -595,6 +649,18 @@ class MapManager {
     }
 
     return null;
+  }
+
+  findStationPopupLayerByIndex(stationIndex) {
+    if (typeof stationIndex !== 'number') {
+      return null;
+    }
+
+    if (this.stationMarker && this.stationMarker.stationIndex === stationIndex && typeof this.stationMarker.getPopup === 'function') {
+      return this.stationMarker;
+    }
+
+    return this.findStationDotLayerByIndex(stationIndex);
   }
 
   attachStationPopupHandlers(layer) {
@@ -659,6 +725,7 @@ class MapManager {
     const linesHTML = this.stationManager.getLineNamesHTML(station.lines);
     const stationName = this.escapeHtml(station.name || '');
     const stationKana = this.escapeHtml(station.name_kana || '');
+    const memoValue = this.escapeHtml(this.getStationMemo(station.id));
 
     const locationRankForStation = locationLatLng
       ? this.stationManager.getStationRankFromLatLng(locationLatLng, station)
@@ -675,6 +742,7 @@ class MapManager {
       : `<div style="${STATION_POPUP_ACTION_WRAPPER_STYLE}">
           <a href="#" class="station-select-action" data-station-name="${this.escapeHtml(station.name || '')}" style="${STATION_POPUP_ACTION_STYLE}">この駅を指定</a>
         </div>`;
+    const memoStatusText = memoValue ? '保存済み' : '未保存';
 
     return `
       <div style="${STATION_POPUP_CONTAINER_STYLE}">
@@ -683,6 +751,17 @@ class MapManager {
         <div style="${STATION_POPUP_PREFECTURE_STYLE}">${prefectureName}</div>
         ${linesHTML}
         ${locationRankHTML}
+        <div style="${STATION_POPUP_MEMO_SECTION_STYLE}">
+          <div style="${STATION_POPUP_MEMO_HEADER_STYLE}">
+            <label style="${STATION_POPUP_MEMO_LABEL_STYLE}; margin-bottom: 0;" for="station-memo-${station.id}">一言メモ</label>
+            <button type="button" class="station-memo-delete-action" data-station-id="${station.id}" style="${STATION_POPUP_MEMO_DELETE_BUTTON_STYLE}" aria-label="メモを削除" title="メモを削除">メモを削除</button>
+          </div>
+          <textarea id="station-memo-${station.id}" class="station-memo-input" data-station-id="${station.id}" maxlength="${STATION_MEMO_MAX_LENGTH}" placeholder="この駅のメモを入力" style="${STATION_POPUP_MEMO_TEXTAREA_STYLE}">${memoValue}</textarea>
+          <div style="${STATION_POPUP_MEMO_META_STYLE}">
+            <span class="station-memo-status" data-station-id="${station.id}" style="${STATION_POPUP_MEMO_STATUS_STYLE}">${memoStatusText}</span>
+            <button type="button" class="station-memo-save-action" data-station-id="${station.id}" style="${STATION_POPUP_MEMO_SAVE_BUTTON_STYLE}">保存</button>
+          </div>
+        </div>
         ${selectedBadgeHTML}
         ${selectActionHTML}
       </div>
@@ -692,13 +771,67 @@ class MapManager {
   createStationLabelIcon(stationName, options = {}) {
     const color = options.color || '#2255CC';
     const interactive = Boolean(options.interactive);
+    const width = Number.isFinite(options.width) ? options.width : 200;
+    const fontSize = Number.isFinite(options.fontSize) ? options.fontSize : 16;
+    const fontWeight = options.fontWeight || 700;
+    const marginTop = Number.isFinite(options.marginTop) ? options.marginTop : 8;
     const safeStationName = this.escapeHtml(stationName || '');
+    const style = [
+      `width: ${width}px`,
+      `margin-top: ${marginTop}px`,
+      `font-size: ${fontSize}px`,
+      `font-weight: ${fontWeight}`,
+      'text-align: center',
+      'text-shadow: -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 2px 2px 0 #fff, -2px 0 0 #fff, 2px 0 0 #fff, 0 -2px 0 #fff, 0 2px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff',
+      'white-space: nowrap',
+      `color: ${color}`,
+      `pointer-events: ${interactive ? 'auto' : 'none'}`,
+      `cursor: ${interactive ? 'pointer' : 'default'}`,
+    ].join('; ');
 
     return L.divIcon({
       className: interactive ? 'station-label station-label-interactive' : 'station-label',
-      html: `<div style="${STATION_LABEL_BASE_STYLE}; color: ${color}; pointer-events: ${interactive ? 'auto' : 'none'}; cursor: ${interactive ? 'pointer' : 'default'};">${safeStationName}</div>`,
-      iconSize: [200, 32],
-      iconAnchor: [100, 0],
+      html: `<div style="${style}">${safeStationName}</div>`,
+      iconSize: [width, 32],
+      iconAnchor: [Math.round(width / 2), 0],
+    });
+  }
+
+  createStationMemoLabelIcon(memoCharacter, options = {}) {
+    if (!memoCharacter) {
+      return null;
+    }
+
+    const color = options.color || STATION_MEMO_LABEL_COLOR;
+    const safeCharacter = this.escapeHtml(memoCharacter);
+    const characterCount = Array.from(memoCharacter).length;
+    const badgeWidth = characterCount >= 2 ? 36 : 28;
+    const badgeStyle = [
+      'display: flex',
+      'align-items: center',
+      'justify-content: center',
+      `width: ${badgeWidth}px`,
+      'height: 28px',
+      'margin-top: -24px',
+      'margin-left: 0',
+      'border-radius: 999px',
+      'background: #ffffff',
+      'border: 3px solid #ffffff',
+      'box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35)',
+      'color: #374151',
+      'font-size: 18px',
+      'font-weight: 800',
+      'line-height: 1',
+      'text-align: center',
+      'pointer-events: auto',
+      'font-family: system-ui, sans-serif'
+    ].join('; ');
+
+    return L.divIcon({
+      className: 'station-memo-label',
+      html: `<div style="${badgeStyle}">${safeCharacter}</div>`,
+      iconSize: [badgeWidth, 28],
+      iconAnchor: [Math.round(badgeWidth / 2), 14],
     });
   }
 
@@ -722,15 +855,31 @@ class MapManager {
 
     const onClick = (event) => {
       const selectAction = this.getStationPopupActionFromEvent(event, popupElement);
-      if (!selectAction) {
+      if (selectAction) {
+        L.DomEvent.stop(event);
+        const stationName = selectAction.getAttribute('data-station-name') || '';
+        if (window.app && typeof window.app.selectStationByName === 'function') {
+          window.app.selectStationByName(stationName);
+        }
         return;
       }
 
-      event.preventDefault();
-      const stationName = selectAction.getAttribute('data-station-name') || '';
-      if (window.app && typeof window.app.selectStationByName === 'function') {
-        window.app.selectStationByName(stationName);
+      const saveAction = this.getStationPopupMemoSaveActionFromEvent(event, popupElement);
+      if (saveAction) {
+        L.DomEvent.stop(event);
+        const stationId = Number(saveAction.getAttribute('data-station-id'));
+        this.saveStationMemoFromPopup(popupElement, stationId);
+        return;
       }
+
+      const deleteAction = this.getStationPopupMemoDeleteActionFromEvent(event, popupElement);
+      if (!deleteAction) {
+        return;
+      }
+
+      L.DomEvent.stop(event);
+      const stationId = Number(deleteAction.getAttribute('data-station-id'));
+      this.clearStationMemoFromPopup(popupElement, stationId);
     };
 
     const onPointerOver = (event) => {
@@ -756,7 +905,453 @@ class MapManager {
     popupElement.addEventListener('click', onClick);
     popupElement.addEventListener('pointerover', onPointerOver);
     popupElement.addEventListener('pointerout', onPointerOut);
+    popupElement.addEventListener('input', (event) => {
+      const memoInput = this.getStationPopupMemoInputFromEvent(event, popupElement);
+      if (!memoInput) {
+        return;
+      }
+
+      const stationId = Number(memoInput.getAttribute('data-station-id'));
+      this.updateStationMemoStatus(popupElement, stationId, '入力中...');
+    });
+    popupElement.addEventListener('change', (event) => {
+      const memoInput = this.getStationPopupMemoInputFromEvent(event, popupElement);
+      if (!memoInput) {
+        return;
+      }
+
+      const stationId = Number(memoInput.getAttribute('data-station-id'));
+      this.saveStationMemoFromPopup(popupElement, stationId);
+    });
     popupElement.__stationPopupActionsBound = true;
+  }
+
+  getStationPopupMemoSaveActionFromEvent(event, popupElement) {
+    if (!event || !popupElement) {
+      return null;
+    }
+
+    const target = event.target;
+    if (!target || typeof target.closest !== 'function') {
+      return null;
+    }
+
+    const saveAction = target.closest('.station-memo-save-action');
+    if (!saveAction || !popupElement.contains(saveAction)) {
+      return null;
+    }
+
+    return saveAction;
+  }
+
+  getStationPopupMemoInputFromEvent(event, popupElement) {
+    if (!event || !popupElement) {
+      return null;
+    }
+
+    const target = event.target;
+    if (!target || typeof target.closest !== 'function') {
+      return null;
+    }
+
+    const memoInput = target.closest('.station-memo-input');
+    if (!memoInput || !popupElement.contains(memoInput)) {
+      return null;
+    }
+
+    return memoInput;
+  }
+
+  getStationPopupMemoDeleteActionFromEvent(event, popupElement) {
+    if (!event || !popupElement) {
+      return null;
+    }
+
+    const target = event.target;
+    if (!target || typeof target.closest !== 'function') {
+      return null;
+    }
+
+    const deleteAction = target.closest('.station-memo-delete-action');
+    if (!deleteAction || !popupElement.contains(deleteAction)) {
+      return null;
+    }
+
+    return deleteAction;
+  }
+
+  saveStationMemoFromPopup(popupElement, stationId) {
+    if (!popupElement || !Number.isFinite(stationId)) {
+      return;
+    }
+
+    const memoInput = popupElement.querySelector(`.station-memo-input[data-station-id="${stationId}"]`);
+    if (!memoInput) {
+      return;
+    }
+
+    const memo = this.normalizeStationMemo(memoInput.value);
+    memoInput.value = memo;
+    this.setStationMemo(stationId, memo, new Date().toISOString());
+    this.refreshStationPopupContent(stationId);
+    this.refreshStationMemoDecorations(stationId);
+    this.updateStationMemoStatus(popupElement, stationId, memo ? '保存済み' : '空欄で保存済み');
+  }
+
+  clearStationMemoFromPopup(popupElement, stationId) {
+    if (!popupElement || !Number.isFinite(stationId)) {
+      return;
+    }
+
+    const memoInput = popupElement.querySelector(`.station-memo-input[data-station-id="${stationId}"]`);
+    if (!memoInput) {
+      return;
+    }
+
+    memoInput.value = '';
+    this.setStationMemo(stationId, '');
+    this.refreshStationMemoDecorations(stationId);
+    this.updateStationMemoStatus(popupElement, stationId, '削除済み');
+    memoInput.focus();
+  }
+
+  updateStationMemoStatus(popupElement, stationId, text) {
+    if (!popupElement || !Number.isFinite(stationId)) {
+      return;
+    }
+
+    const statusElement = popupElement.querySelector(`.station-memo-status[data-station-id="${stationId}"]`);
+    if (statusElement) {
+      statusElement.textContent = text;
+    }
+  }
+
+  getStationMemo(stationId) {
+    if (!Number.isFinite(Number(stationId)) || !this.stationMemoCache) {
+      return '';
+    }
+
+    const entry = this.getStationMemoEntry(stationId);
+    return entry ? entry.memo : '';
+  }
+
+  getStationMemoEntry(stationId) {
+    if (!Number.isFinite(Number(stationId)) || !this.stationMemoCache) {
+      return null;
+    }
+
+    const rawEntry = this.stationMemoCache[String(Number(stationId))];
+    if (!rawEntry || typeof rawEntry !== 'object' || Array.isArray(rawEntry)) {
+      return null;
+    }
+
+    const memo = this.normalizeStationMemo(rawEntry.memo);
+    if (!memo) {
+      return null;
+    }
+
+    return {
+      memo,
+      updatedAt: this.normalizeMemoUpdatedAt(rawEntry.updatedAt),
+    };
+  }
+
+  setStationMemo(stationId, memo, updatedAt = null) {
+    const normalizedStationId = String(Number(stationId));
+    if (!this.stationMemoCache || normalizedStationId === 'NaN') {
+      return;
+    }
+
+    if (memo) {
+      const safeUpdatedAt = this.normalizeMemoUpdatedAt(updatedAt) || new Date().toISOString();
+      this.stationMemoCache[normalizedStationId] = {
+        memo,
+        updatedAt: safeUpdatedAt,
+      };
+    } else {
+      delete this.stationMemoCache[normalizedStationId];
+    }
+
+    this.saveStationMemoCache();
+  }
+
+  getStationMemoFirstCharacter(stationId) {
+    const memo = this.getStationMemo(stationId);
+    if (!memo) {
+      return '';
+    }
+
+    const characters = Array.from(memo);
+    if (characters.length === 0) {
+      return '';
+    }
+
+    const first = characters[0];
+    const second = characters[1] || '';
+    if (this.isHalfWidthMemoCharacter(first) && second && this.isHalfWidthMemoCharacter(second)) {
+      return `${first}${second}`;
+    }
+
+    return first;
+  }
+
+  isHalfWidthMemoCharacter(character) {
+    if (!character) {
+      return false;
+    }
+
+    return /^[\u0020-\u007E\uFF61-\uFF9F]$/.test(character);
+  }
+
+  updateSelectedStationMemoLabel(station, latlng) {
+    if (!this.isStationMemoLabelEnabled()) {
+      if (this.stationMarkerMemoLabel && this.map) {
+        this.map.removeLayer(this.stationMarkerMemoLabel);
+        this.stationMarkerMemoLabel = null;
+      }
+      return;
+    }
+
+    const memoCharacter = station ? this.getStationMemoFirstCharacter(station.id) : '';
+    const memoLabelIcon = this.createStationMemoLabelIcon(memoCharacter, {
+      color: STATION_MEMO_LABEL_COLOR,
+    });
+
+    if (!memoLabelIcon) {
+      if (this.stationMarkerMemoLabel && this.map) {
+        this.map.removeLayer(this.stationMarkerMemoLabel);
+        this.stationMarkerMemoLabel = null;
+      }
+      return;
+    }
+
+    if (this.stationMarkerMemoLabel) {
+      this.stationMarkerMemoLabel.setLatLng(latlng);
+      this.stationMarkerMemoLabel.setIcon(memoLabelIcon);
+      return;
+    }
+
+    this.stationMarkerMemoLabel = L.marker(latlng, {
+      icon: memoLabelIcon,
+      pane: 'stationPane',
+      interactive: true,
+      bubblingMouseEvents: false,
+    }).addTo(this.map);
+    this.stationMarkerMemoLabel.stationIndex = station.index;
+    this.stationMarkerMemoLabel.isStationMemoLabel = true;
+    this.attachStationLabelInteraction(this.stationMarkerMemoLabel);
+  }
+
+  refreshStationMemoDecorations(stationId) {
+    const station = this.stationManager && this.stationManager.getStationById
+      ? this.stationManager.getStationById(stationId)
+      : null;
+    if (!station) {
+      return;
+    }
+
+    if (this.stationMarker && this.stationMarker.stationIndex === station.index) {
+      this.updateSelectedStationMemoLabel(station, [station.lat, station.lng]);
+    }
+
+    if (this.stationDotsLayer && this.map) {
+      const currentStationIndex = this.uiManager && typeof this.uiManager.getCurrentStationIndex === 'function'
+        ? this.uiManager.getCurrentStationIndex()
+        : null;
+      this.updateStationDots(currentStationIndex);
+    }
+  }
+
+  refreshStationPopupContent(stationId) {
+    const station = this.stationManager && this.stationManager.getStationById
+      ? this.stationManager.getStationById(stationId)
+      : null;
+    if (!station) {
+      return;
+    }
+
+    const locationLatLng = this.locationManager && this.locationManager.isTracking()
+      ? this.locationManager.getLastLatLng()
+      : null;
+
+    if (this.stationMarker && this.stationMarker.stationIndex === station.index && typeof this.stationMarker.setPopupContent === 'function') {
+      this.stationMarker.setPopupContent(this.buildStationPopupContent(station, {
+        isSelected: true,
+        locationLatLng,
+      }));
+    }
+
+    const stationDot = this.findStationDotLayerByIndex(station.index);
+    if (stationDot && typeof stationDot.setPopupContent === 'function') {
+      stationDot.setPopupContent(this.buildStationPopupContent(station, {
+        isSelected: false,
+        locationLatLng,
+      }));
+    }
+  }
+
+  loadStationMemoCache() {
+    try {
+      const raw = localStorage.getItem(STATION_MEMO_STORAGE_KEY);
+      if (!raw || raw.length > 200000) {
+        return {};
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return {};
+      }
+
+      const sanitized = {};
+      Object.entries(parsed).forEach(([stationId, rawValue]) => {
+        if (!/^\d+$/.test(stationId)) {
+          return;
+        }
+
+        if (typeof rawValue === 'string') {
+          const legacyMemo = this.normalizeStationMemo(rawValue);
+          if (legacyMemo) {
+            sanitized[stationId] = {
+              memo: legacyMemo,
+              updatedAt: '',
+            };
+          }
+          return;
+        }
+
+        if (!rawValue || typeof rawValue !== 'object' || Array.isArray(rawValue)) {
+          return;
+        }
+
+        const normalizedMemo = this.normalizeStationMemo(rawValue.memo);
+        if (normalizedMemo) {
+          sanitized[stationId] = {
+            memo: normalizedMemo,
+            updatedAt: this.normalizeMemoUpdatedAt(rawValue.updatedAt),
+          };
+        }
+      });
+      return sanitized;
+    } catch (e) {
+      console.warn('localStorage access denied:', e);
+      return {};
+    }
+  }
+
+  saveStationMemoCache() {
+    try {
+      localStorage.setItem(STATION_MEMO_STORAGE_KEY, JSON.stringify(this.stationMemoCache || {}));
+    } catch (e) {
+      console.warn('localStorage access denied:', e);
+    }
+  }
+
+  normalizeStationMemo(value) {
+    return String(value || '')
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .trim()
+      .slice(0, STATION_MEMO_MAX_LENGTH);
+  }
+
+  normalizeMemoUpdatedAt(value) {
+    if (typeof value !== 'string' || value.length === 0) {
+      return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toISOString();
+  }
+
+  formatMemoUpdatedAtForExport(value) {
+    const iso = this.normalizeMemoUpdatedAt(value);
+    if (!iso) {
+      return '';
+    }
+
+    const date = new Date(iso);
+    const pad2 = (num) => String(num).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const mm = pad2(date.getMonth() + 1);
+    const dd = pad2(date.getDate());
+    const hh = pad2(date.getHours());
+    const mi = pad2(date.getMinutes());
+    const ss = pad2(date.getSeconds());
+    return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+  }
+
+  escapeCsvCell(value) {
+    const text = String(value == null ? '' : value)
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  buildStationMemoExportRows() {
+    if (!this.stationMemoCache || typeof this.stationMemoCache !== 'object') {
+      return [];
+    }
+
+    const rows = [];
+    Object.entries(this.stationMemoCache).forEach(([stationId]) => {
+      if (!/^\d+$/.test(stationId)) {
+        return;
+      }
+
+      const entry = this.getStationMemoEntry(Number(stationId));
+      if (!entry || !entry.memo) {
+        return;
+      }
+
+      const station = this.stationManager && this.stationManager.getStationById
+        ? this.stationManager.getStationById(Number(stationId))
+        : null;
+      const stationName = station && station.name ? station.name : '';
+
+      rows.push({
+        updatedAt: this.formatMemoUpdatedAtForExport(entry.updatedAt),
+        stationName,
+        memo: entry.memo,
+      });
+    });
+
+    rows.sort((a, b) => a.stationName.localeCompare(b.stationName, 'ja'));
+    return rows;
+  }
+
+  exportStationMemosAsCsv() {
+    const rows = this.buildStationMemoExportRows();
+    if (rows.length === 0) {
+      return 0;
+    }
+
+    const lines = [
+      STATION_MEMO_EXPORT_HEADERS.map((header) => this.escapeCsvCell(header)).join(','),
+      ...rows.map((row) => [
+        this.escapeCsvCell(row.updatedAt),
+        this.escapeCsvCell(row.stationName),
+        this.escapeCsvCell(row.memo),
+      ].join(',')),
+    ];
+
+    const csvText = lines.join('\r\n');
+    const blob = new Blob([`\uFEFF${csvText}`], { type: 'text/csv;charset=utf-8;' });
+    const now = new Date();
+    const pad2 = (num) => String(num).padStart(2, '0');
+    const fileName = `station-memos-${now.getFullYear()}${pad2(now.getMonth() + 1)}${pad2(now.getDate())}-${pad2(now.getHours())}${pad2(now.getMinutes())}${pad2(now.getSeconds())}.csv`;
+
+    const objectUrl = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = objectUrl;
+    downloadLink.download = fileName;
+    downloadLink.click();
+    URL.revokeObjectURL(objectUrl);
+
+    return rows.length;
   }
 
   getStationPopupActionFromEvent(event, popupElement) {
@@ -799,6 +1394,10 @@ class MapManager {
 
   isStationAttrColorEnabled() {
     return Boolean(this.uiManager && this.uiManager.isStationAttrColorEnabled && this.uiManager.isStationAttrColorEnabled());
+  }
+
+  isStationMemoLabelEnabled() {
+    return !this.uiManager || !this.uiManager.isStationMemoLabelEnabled || this.uiManager.isStationMemoLabelEnabled();
   }
 
   normalizeStationAttr(attr) {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'radar-notify-v2';
+const CACHE_NAME = 'radar-notify-v3';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -57,12 +57,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) {
-        return cached;
+    fetch(event.request).then((response) => {
+      if (isSameOrigin && response && response.status === 200) {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseClone).catch(() => {
+            // キャッシュ更新失敗時は無視
+          });
+        });
       }
-      return fetch(event.request).catch(() => caches.match('./index.html'));
+      return response;
+    }).catch(() => {
+      return caches.match(event.request).then((cached) => {
+        if (cached) {
+          return cached;
+        }
+
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+
+        return caches.match('./index.html');
+      });
     })
   );
 });
