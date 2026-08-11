@@ -806,13 +806,16 @@ class MapManager {
     const safeCharacter = this.escapeHtml(memoCharacter);
     const characterCount = Array.from(memoCharacter).length;
     const badgeWidth = characterCount >= 2 ? 36 : 28;
+    const badgeHeight = 28;
+    const tailHeight = 5;
+    const iconHeight = badgeHeight + tailHeight - 1;
+    const tailWidth = 10;
     const badgeStyle = [
       'display: flex',
       'align-items: center',
       'justify-content: center',
       `width: ${badgeWidth}px`,
-      'height: 28px',
-      'margin-top: -24px',
+      `height: ${badgeHeight}px`,
       'margin-left: 0',
       'border-radius: 999px',
       'background: #ffffff',
@@ -826,12 +829,32 @@ class MapManager {
       'pointer-events: auto',
       'font-family: system-ui, sans-serif'
     ].join('; ');
+    const tailStyle = [
+      'width: 0',
+      'height: 0',
+      'margin-top: -1px',
+      'border-left: 5px solid transparent',
+      'border-right: 5px solid transparent',
+      `border-top: ${tailHeight}px solid #ffffff`,
+      'filter: drop-shadow(0 2px 2px rgba(15, 23, 42, 0.15))',
+      'pointer-events: auto'
+    ].join('; ');
+    const wrapperStyle = [
+      'display: flex',
+      'flex-direction: column',
+      'align-items: center',
+      'justify-content: flex-start',
+      'overflow: visible',
+      `width: ${badgeWidth}px`,
+      `height: ${iconHeight}px`,
+      'pointer-events: auto'
+    ].join('; ');
 
     return L.divIcon({
       className: 'station-memo-label',
-      html: `<div style="${badgeStyle}">${safeCharacter}</div>`,
-      iconSize: [badgeWidth, 28],
-      iconAnchor: [Math.round(badgeWidth / 2), 14],
+      html: `<div style="${wrapperStyle}"><div style="${badgeStyle}">${safeCharacter}</div><div style="${tailStyle}"></div></div>`,
+      iconSize: [badgeWidth, iconHeight],
+      iconAnchor: [Math.round(badgeWidth / 2), iconHeight + 11],
     });
   }
 
