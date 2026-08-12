@@ -15,6 +15,9 @@ class UIManager {
     this.notificationAudioElement = null;
     this.notificationAudioDataUri = './audio/notification-tone.wav';
     this.audioUnlockBound = false;
+    this.serviceWorkerControllerChanged = false;
+    this.serviceWorkerUpdateHooksInitialized = false;
+    this.lastServiceWorkerUpdateCheckAt = 0;
     
     // DOM要素
     this.searchInput = document.getElementById('searchInput');
@@ -467,8 +470,11 @@ class UIManager {
       return;
     }
 
-    this.notificationReadyPromise = navigator.serviceWorker.register('./service-worker.js').then((registration) => {
+    this.notificationReadyPromise = navigator.serviceWorker.register('./service-worker.js?v=20260812a', {
+      updateViaCache: 'none',
+    }).then((registration) => {
       console.info('[PWA] Service Worker registered:', registration.scope);
+      this.initializeServiceWorkerUpdateSupport(registration);
       return navigator.serviceWorker.ready;
     }).then(() => {
       this.notificationReady = true;
@@ -478,6 +484,72 @@ class UIManager {
       console.error('[PWA] Service Worker registration failed:', error);
       return null;
     });
+  }
+
+  initializeServiceWorkerUpdateSupport(registration) {
+    if (!registration) {
+      return;
+    }
+
+    const requestWaitingWorkerActivation = () => {
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+    };
+
+    const triggerServiceWorkerUpdate = () => {
+      const now = Date.now();
+      if (now - this.lastServiceWorkerUpdateCheckAt < 10000) {
+        return;
+      }
+      this.lastServiceWorkerUpdateCheckAt = now;
+      registration.update().catch((error) => {
+        console.warn('[PWA] Service Worker update check failed:', error);
+      });
+    };
+
+    requestWaitingWorkerActivation();
+
+    registration.addEventListener('updatefound', () => {
+      const installingWorker = registration.installing;
+      if (!installingWorker) {
+        return;
+      }
+
+      installingWorker.addEventListener('statechange', () => {
+        if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          requestWaitingWorkerActivation();
+        }
+      });
+    });
+
+    if (!this.serviceWorkerUpdateHooksInitialized) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (this.serviceWorkerControllerChanged) {
+          return;
+        }
+        this.serviceWorkerControllerChanged = true;
+        window.location.reload();
+      });
+
+      window.addEventListener('pageshow', () => {
+        triggerServiceWorkerUpdate();
+      });
+
+      window.addEventListener('focus', () => {
+        triggerServiceWorkerUpdate();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          triggerServiceWorkerUpdate();
+        }
+      });
+
+      this.serviceWorkerUpdateHooksInitialized = true;
+    }
+
+    triggerServiceWorkerUpdate();
   }
 
   initializeAudioUnlockListeners() {

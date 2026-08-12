@@ -1,4 +1,4 @@
-const CACHE_NAME = 'radar-notify-v3';
+const CACHE_NAME = 'radar-notify-v4';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -50,6 +50,14 @@ self.addEventListener('activate', (event) => {
       keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
     )).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (!event.data || event.data.type !== 'SKIP_WAITING') {
+    return;
+  }
+
+  self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
