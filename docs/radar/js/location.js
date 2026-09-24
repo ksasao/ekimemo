@@ -148,18 +148,14 @@ class LocationManager {
   }
 
   getCurrentUpdateInterval() {
-    const useHighFrequency = this.uiManager && this.uiManager.isHighFrequencyGpsEnabled && this.uiManager.isHighFrequencyGpsEnabled();
-    const rawInterval = useHighFrequency
-      ? CONFIG.location.highFrequencyUpdateInterval
-      : CONFIG.location.updateInterval;
-    return Math.max(500, Number(rawInterval) || 1000);
+    const rawInterval = this.uiManager.getLocationUpdateInterval();
+    return Math.max(500, Number(rawInterval) || CONFIG.location.updateInterval);
   }
 
   getLocationRequestOptions() {
-    const useHighFrequency = this.uiManager && this.uiManager.isHighFrequencyGpsEnabled && this.uiManager.isHighFrequencyGpsEnabled();
-    const maximumAge = useHighFrequency
-      ? CONFIG.location.highFrequencyMaximumAge
-      : CONFIG.location.maximumAge;
+    const maximumAge = this.shouldUseWatchPosition()
+      ? CONFIG.location.realtimeMaximumAge
+      : Math.min(CONFIG.location.maximumAge, this.getCurrentUpdateInterval());
 
     return {
       enableHighAccuracy: CONFIG.location.enableHighAccuracy,
@@ -177,7 +173,7 @@ class LocationManager {
   }
 
   shouldUseWatchPosition() {
-    return Boolean(this.uiManager && this.uiManager.isHighFrequencyGpsEnabled && this.uiManager.isHighFrequencyGpsEnabled());
+    return this.uiManager.isRealtimeLocationUpdateEnabled();
   }
 
   // 位置情報追跡を停止

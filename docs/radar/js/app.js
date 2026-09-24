@@ -127,7 +127,7 @@ class RadarApp {
       onNearestStationNotifySettingChange: () => {
         this.savePersistentViewState();
       },
-      onHighFrequencyGpsSettingChange: () => {
+      onLocationUpdateIntervalChange: () => {
         if (this.locationManager) {
           this.locationManager.handleUpdateModeChange();
         }
@@ -276,7 +276,7 @@ class RadarApp {
       stationId: station.id,
       detectionCount,
       nearestStationNotificationEnabled: this.uiManager.isNearestStationNotificationEnabled(),
-      highFrequencyGpsEnabled: this.uiManager.isHighFrequencyGpsEnabled(),
+      locationUpdateIntervalMs: this.uiManager.getLocationUpdateInterval(),
       stationAttrColorEnabled: this.uiManager.isStationAttrColorEnabled(),
       stationMemoLabelEnabled: this.uiManager.isStationMemoLabelEnabled(),
       mapView: {
@@ -335,8 +335,15 @@ class RadarApp {
       parsed.nearestStationNotificationEnabled = rawState.nearestStationNotificationEnabled;
     }
 
-    if (typeof rawState.highFrequencyGpsEnabled === 'boolean') {
-      parsed.highFrequencyGpsEnabled = rawState.highFrequencyGpsEnabled;
+    const locationUpdateIntervalMs = Number(rawState.locationUpdateIntervalMs);
+    if (
+      typeof rawState.locationUpdateIntervalMs === 'number' &&
+      CONFIG.location.updateIntervalOptions.includes(locationUpdateIntervalMs)
+    ) {
+      parsed.locationUpdateIntervalMs = locationUpdateIntervalMs;
+    } else if (rawState.highFrequencyGpsEnabled === true) {
+      // 旧「位置情報を高頻度更新」ONの保存値はリアルタイムとして引き継ぐ
+      parsed.locationUpdateIntervalMs = 0;
     }
 
     if (typeof rawState.stationAttrColorEnabled === 'boolean') {
@@ -602,8 +609,11 @@ class RadarApp {
       this.uiManager.setNearestStationNotificationEnabled(sharedState.nearestStationNotificationEnabled);
     }
 
-    if (typeof sharedState.highFrequencyGpsEnabled === 'boolean') {
-      this.uiManager.setHighFrequencyGpsEnabled(sharedState.highFrequencyGpsEnabled);
+    if (typeof sharedState.locationUpdateIntervalMs === 'number') {
+      this.uiManager.setLocationUpdateInterval(sharedState.locationUpdateIntervalMs);
+      if (this.locationManager) {
+        this.locationManager.handleUpdateModeChange();
+      }
     }
 
     if (typeof sharedState.stationAttrColorEnabled === 'boolean') {

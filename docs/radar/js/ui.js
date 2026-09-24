@@ -27,7 +27,7 @@ class UIManager {
     this.drawButton = document.getElementById('drawButton');
     this.shareStateButton = document.getElementById('shareStateBtn');
     this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
-    this.highFrequencyGpsToggle = document.getElementById('highFrequencyGpsToggle');
+    this.locationUpdateIntervalSelect = document.getElementById('locationUpdateIntervalSelect');
     this.stationAttrColorToggle = document.getElementById('stationAttrColorToggle');
     this.stationMemoLabelToggle = document.getElementById('stationMemoLabelToggle');
     this.exportStationMemosButton = document.getElementById('exportStationMemosBtn');
@@ -49,7 +49,7 @@ class UIManager {
   initialize() {
     this.fillDetectionCountSelect();
     this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
-    this.setHighFrequencyGpsEnabled(false);
+    this.setLocationUpdateInterval(CONFIG?.location?.updateInterval);
     this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
     this.setStationMemoLabelEnabled(true);
     this.initializeMobileDrawer();
@@ -169,10 +169,10 @@ class UIManager {
       });
     }
 
-    if (this.highFrequencyGpsToggle) {
-      this.highFrequencyGpsToggle.addEventListener('change', () => {
-        if (callbacks.onHighFrequencyGpsSettingChange) {
-          callbacks.onHighFrequencyGpsSettingChange(this.highFrequencyGpsToggle.checked);
+    if (this.locationUpdateIntervalSelect) {
+      this.locationUpdateIntervalSelect.addEventListener('change', () => {
+        if (callbacks.onLocationUpdateIntervalChange) {
+          callbacks.onLocationUpdateIntervalChange(this.getLocationUpdateInterval());
         }
       });
     }
@@ -421,18 +421,27 @@ class UIManager {
     this.stationAttrColorToggle.checked = Boolean(enabled);
   }
 
-  setHighFrequencyGpsEnabled(enabled) {
-    if (!this.highFrequencyGpsToggle) {
+  setLocationUpdateInterval(intervalMs) {
+    if (!this.locationUpdateIntervalSelect) {
       return;
     }
-    this.highFrequencyGpsToggle.checked = Boolean(enabled);
+    const options = CONFIG.location.updateIntervalOptions;
+    const value = options.includes(Number(intervalMs)) ? Number(intervalMs) : CONFIG.location.updateInterval;
+    this.locationUpdateIntervalSelect.value = String(value);
   }
 
-  isHighFrequencyGpsEnabled() {
-    if (!this.highFrequencyGpsToggle) {
-      return false;
+  // 0 はリアルタイム(GPS更新イベント駆動)を表す
+  getLocationUpdateInterval() {
+    const fallback = CONFIG.location.updateInterval;
+    if (!this.locationUpdateIntervalSelect) {
+      return fallback;
     }
-    return this.highFrequencyGpsToggle.checked;
+    const value = Number(this.locationUpdateIntervalSelect.value);
+    return Number.isFinite(value) && value >= 0 ? value : fallback;
+  }
+
+  isRealtimeLocationUpdateEnabled() {
+    return this.getLocationUpdateInterval() === 0;
   }
 
   isStationAttrColorEnabled() {
