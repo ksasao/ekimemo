@@ -249,7 +249,7 @@ class UIManager {
     list.forEach((s) => {
       const opt = document.createElement('option');
       opt.value = s.id;
-      opt.textContent = s.name;
+      opt.textContent = s.name_kana ? `${s.name}(${s.name_kana})` : s.name;
       fragment.appendChild(opt);
     });
 
