@@ -11,7 +11,6 @@ class UIManager {
     this.notificationReady = false;
     this.notificationReadyPromise = Promise.resolve(null);
     this.audioContext = null;
-    this.notificationAudioReady = false;
     this.notificationAudioElement = null;
     this.notificationAudioBuffer = null;
     this.notificationAudioBufferPromise = null;
@@ -594,15 +593,22 @@ class UIManager {
     }
     
 
+    this.audioUnlockBound = true;
+
+    // 他アプリの再生やバックグラウンド移行で AudioContext が止まることがあるため、
+    // 初回だけでなく操作のたびに再開を試みる
     const unlockAudio = () => {
-      this.audioUnlockBound = true;
       void this.prepareNotificationAudio();
     };
 
-    document.addEventListener('pointerdown', unlockAudio, { once: true });
-    document.addEventListener('touchstart', unlockAudio, { once: true });
-    document.addEventListener('mousedown', unlockAudio, { once: true });
-    document.addEventListener('keydown', unlockAudio, { once: true });
+    document.addEventListener('pointerdown', unlockAudio, { passive: true });
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('keydown', unlockAudio);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && this.audioContext) {
+        void this.ensureAudioContextRunning();
+      }
+    });
   }
 
   // iOS Safari 16.4+: 他アプリの音楽を止めずに重ねて鳴らす(サイレントスイッチON時は鳴らない)
@@ -635,10 +641,6 @@ class UIManager {
   }
 
   async prepareNotificationAudio() {
-    if (this.notificationAudioReady) {
-      return true;
-    }
-
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) {
       this.initializeNotificationAudio();
@@ -650,17 +652,31 @@ class UIManager {
         this.audioContext = new AudioContextClass();
       }
 
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-
-      this.notificationAudioReady = true;
+      const running = await this.ensureAudioContextRunning();
       void this.loadNotificationAudioBuffer();
-      return true;
+      return running;
     } catch (error) {
       console.warn('Failed to prepare notification audio:', error);
       return false;
     }
+  }
+
+  // suspended / interrupted から再開を試み、実際に running になったかを返す
+  // (resume() が解決しないまま止まる環境があるためタイムアウトを設ける)
+  ensureAudioContextRunning() {
+    const ctx = this.audioContext;
+    if (!ctx) {
+      return Promise.resolve(false);
+    }
+    if (ctx.state === 'running') {
+      return Promise.resolve(true);
+    }
+
+    const resumed = ctx.resume()
+      .then(() => ctx.state === 'running')
+      .catch(() => false);
+    const timeout = new Promise((resolve) => setTimeout(() => resolve(false), 500));
+    return Promise.race([resumed, timeout]);
   }
 
   loadNotificationAudioBuffer() {
@@ -695,30 +711,27 @@ class UIManager {
   }
 
   // HTMLAudioElement はスマホでメディア再生扱いになり、他アプリの音楽を止めてしまうため
-  // Web Audio を優先して鳴らす
+  // Web Audio を優先して鳴らす。Web Audio で鳴らせないときは通知音を失わないよう
+  // HTMLAudioElement で鳴らす(この場合は他アプリの音楽が止まることがある)
   playNotificationSound() {
-    if (!this.audioContext || !this.notificationAudioReady) {
+    if (!this.audioContext) {
       this.playNotificationSoundViaAudioElement();
       return;
     }
 
-    const play = () => {
+    void this.ensureAudioContextRunning().then((running) => {
+      if (!running) {
+        console.warn('AudioContext is not running, falling back to audio element:', this.audioContext.state);
+        this.playNotificationSoundViaAudioElement();
+        return;
+      }
+
       if (this.notificationAudioBuffer) {
         this.playNotificationBuffer();
       } else {
         this.playNotificationSoundViaWebAudio();
         void this.loadNotificationAudioBuffer();
       }
-    };
-
-    if (this.audioContext.state === 'running') {
-      play();
-      return;
-    }
-
-    // iOS ではバックグラウンド復帰後などに interrupted / suspended になる
-    this.audioContext.resume().then(play).catch((error) => {
-      console.warn('Failed to resume audio context:', error);
     });
   }
 
