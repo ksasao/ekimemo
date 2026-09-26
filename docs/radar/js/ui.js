@@ -13,6 +13,8 @@ class UIManager {
     this.audioContext = null;
     this.notificationAudioReady = false;
     this.notificationAudioElement = null;
+    this.notificationAudioBuffer = null;
+    this.notificationAudioBufferPromise = null;
     this.notificationAudioDataUri = './audio/notification-tone.wav';
     this.audioUnlockBound = false;
     this.serviceWorkerControllerChanged = false;
@@ -55,6 +57,7 @@ class UIManager {
     this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
     this.setStationMemoLabelEnabled(true);
     this.initializeMobileDrawer();
+    this.initializeAudioSession();
     this.initializeNotificationSupport();
     this.initializeAudioUnlockListeners();
     if (this.searchClearButton) {
@@ -602,6 +605,18 @@ class UIManager {
     document.addEventListener('keydown', unlockAudio, { once: true });
   }
 
+  // iOS Safari 16.4+: 他アプリの音楽を止めずに重ねて鳴らす(サイレントスイッチON時は鳴らない)
+  initializeAudioSession() {
+    if (!navigator.audioSession) {
+      return;
+    }
+    try {
+      navigator.audioSession.type = 'ambient';
+    } catch (error) {
+      console.warn('Failed to set audio session type:', error);
+    }
+  }
+
   initializeNotificationAudio() {
     if (this.notificationAudioElement) {
       return this.notificationAudioElement;
@@ -624,10 +639,9 @@ class UIManager {
       return true;
     }
 
-    this.initializeNotificationAudio();
-
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) {
+      this.initializeNotificationAudio();
       return false;
     }
 
@@ -641,6 +655,7 @@ class UIManager {
       }
 
       this.notificationAudioReady = true;
+      void this.loadNotificationAudioBuffer();
       return true;
     } catch (error) {
       console.warn('Failed to prepare notification audio:', error);
@@ -648,32 +663,92 @@ class UIManager {
     }
   }
 
-  playNotificationSound() {
-    this.initializeNotificationAudio();
-
-    if (this.notificationAudioElement) {
-      try {
-        this.notificationAudioElement.pause();
-        this.notificationAudioElement.currentTime = 0;
-        const playPromise = this.notificationAudioElement.play();
-        if (playPromise && typeof playPromise.catch === 'function') {
-          playPromise.catch(() => {
-            this.playNotificationSoundViaWebAudio();
-          });
-        }
-        return;
-      } catch (error) {
-        console.warn('Failed to play notification audio element:', error);
-      }
+  loadNotificationAudioBuffer() {
+    if (this.notificationAudioBuffer) {
+      return Promise.resolve(this.notificationAudioBuffer);
+    }
+    if (this.notificationAudioBufferPromise) {
+      return this.notificationAudioBufferPromise;
     }
 
-    this.playNotificationSoundViaWebAudio();
+    const ctx = this.audioContext;
+    this.notificationAudioBufferPromise = fetch(this.notificationAudioDataUri)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.arrayBuffer();
+      })
+      // Safari の古い webkitAudioContext は Promise 版 decodeAudioData に非対応
+      .then((data) => new Promise((resolve, reject) => ctx.decodeAudioData(data, resolve, reject)))
+      .then((buffer) => {
+        this.notificationAudioBuffer = buffer;
+        return buffer;
+      })
+      .catch((error) => {
+        console.warn('Failed to load notification audio buffer:', error);
+        this.notificationAudioBufferPromise = null;
+        return null;
+      });
+
+    return this.notificationAudioBufferPromise;
+  }
+
+  // HTMLAudioElement はスマホでメディア再生扱いになり、他アプリの音楽を止めてしまうため
+  // Web Audio を優先して鳴らす
+  playNotificationSound() {
+    if (!this.audioContext || !this.notificationAudioReady) {
+      this.playNotificationSoundViaAudioElement();
+      return;
+    }
+
+    const play = () => {
+      if (this.notificationAudioBuffer) {
+        this.playNotificationBuffer();
+      } else {
+        this.playNotificationSoundViaWebAudio();
+        void this.loadNotificationAudioBuffer();
+      }
+    };
+
+    if (this.audioContext.state === 'running') {
+      play();
+      return;
+    }
+
+    // iOS ではバックグラウンド復帰後などに interrupted / suspended になる
+    this.audioContext.resume().then(play).catch((error) => {
+      console.warn('Failed to resume audio context:', error);
+    });
+  }
+
+  playNotificationBuffer() {
+    const source = this.audioContext.createBufferSource();
+    source.buffer = this.notificationAudioBuffer;
+    const gainNode = this.audioContext.createGain();
+    gainNode.gain.value = 0.8;
+    source.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    source.start();
+  }
+
+  playNotificationSoundViaAudioElement() {
+    const audio = this.initializeNotificationAudio();
+    try {
+      audio.pause();
+      audio.currentTime = 0;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch((error) => {
+          console.warn('Failed to play notification audio element:', error);
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to play notification audio element:', error);
+    }
   }
 
   playNotificationSoundViaWebAudio() {
-    if (!this.audioContext || !this.notificationAudioReady) {
-      return;
-    }
 
     const now = this.audioContext.currentTime;
     const fadeOutDuration = 0.035;
