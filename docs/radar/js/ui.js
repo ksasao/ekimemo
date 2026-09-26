@@ -28,6 +28,7 @@ class UIManager {
     this.shareStateButton = document.getElementById('shareStateBtn');
     this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
     this.locationUpdateIntervalSelect = document.getElementById('locationUpdateIntervalSelect');
+    this.autoScrollToggle = document.getElementById('autoScrollToggle');
     this.stationAttrColorToggle = document.getElementById('stationAttrColorToggle');
     this.stationMemoLabelToggle = document.getElementById('stationMemoLabelToggle');
     this.exportStationMemosButton = document.getElementById('exportStationMemosBtn');
@@ -50,6 +51,7 @@ class UIManager {
     this.fillDetectionCountSelect();
     this.setNearestStationNotificationEnabled(CONFIG?.nearestStationNotification?.enabledByDefault !== false);
     this.setLocationUpdateInterval(CONFIG?.location?.updateInterval);
+    this.setAutoScrollEnabled(CONFIG.location.autoScrollEnabledByDefault);
     this.setStationAttrColorEnabled(Boolean(CONFIG?.stationDots?.colorByAttrEnabledByDefault));
     this.setStationMemoLabelEnabled(true);
     this.initializeMobileDrawer();
@@ -173,6 +175,14 @@ class UIManager {
       this.locationUpdateIntervalSelect.addEventListener('change', () => {
         if (callbacks.onLocationUpdateIntervalChange) {
           callbacks.onLocationUpdateIntervalChange(this.getLocationUpdateInterval());
+        }
+      });
+    }
+
+    if (this.autoScrollToggle) {
+      this.autoScrollToggle.addEventListener('change', () => {
+        if (callbacks.onAutoScrollSettingChange) {
+          callbacks.onAutoScrollSettingChange(this.autoScrollToggle.checked);
         }
       });
     }
@@ -442,6 +452,20 @@ class UIManager {
 
   isRealtimeLocationUpdateEnabled() {
     return this.getLocationUpdateInterval() === 0;
+  }
+
+  setAutoScrollEnabled(enabled) {
+    if (!this.autoScrollToggle) {
+      return;
+    }
+    this.autoScrollToggle.checked = Boolean(enabled);
+  }
+
+  isAutoScrollEnabled() {
+    if (!this.autoScrollToggle) {
+      return Boolean(CONFIG.location.autoScrollEnabledByDefault);
+    }
+    return this.autoScrollToggle.checked;
   }
 
   isStationAttrColorEnabled() {

@@ -133,6 +133,10 @@ class RadarApp {
         }
         this.savePersistentViewState();
       },
+      onAutoScrollSettingChange: () => {
+        this.locationManager.handleAutoScrollSettingChange();
+        this.savePersistentViewState();
+      },
       onStationAttrColorSettingChange: () => {
         const station = this.uiManager.getSelectedStation();
         if (station) {
@@ -277,6 +281,7 @@ class RadarApp {
       detectionCount,
       nearestStationNotificationEnabled: this.uiManager.isNearestStationNotificationEnabled(),
       locationUpdateIntervalMs: this.uiManager.getLocationUpdateInterval(),
+      autoScrollEnabled: this.uiManager.isAutoScrollEnabled(),
       stationAttrColorEnabled: this.uiManager.isStationAttrColorEnabled(),
       stationMemoLabelEnabled: this.uiManager.isStationMemoLabelEnabled(),
       mapView: {
@@ -344,6 +349,10 @@ class RadarApp {
     } else if (rawState.highFrequencyGpsEnabled === true) {
       // 旧「位置情報を高頻度更新」ONの保存値はリアルタイムとして引き継ぐ
       parsed.locationUpdateIntervalMs = 0;
+    }
+
+    if (typeof rawState.autoScrollEnabled === 'boolean') {
+      parsed.autoScrollEnabled = rawState.autoScrollEnabled;
     }
 
     if (typeof rawState.stationAttrColorEnabled === 'boolean') {
@@ -614,6 +623,10 @@ class RadarApp {
       if (this.locationManager) {
         this.locationManager.handleUpdateModeChange();
       }
+    }
+
+    if (typeof sharedState.autoScrollEnabled === 'boolean') {
+      this.uiManager.setAutoScrollEnabled(sharedState.autoScrollEnabled);
     }
 
     if (typeof sharedState.stationAttrColorEnabled === 'boolean') {

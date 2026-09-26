@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#1976d2" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="manifest" href="manifest.json?v=20260924a" />
+  <link rel="manifest" href="manifest.json?v=20260926a" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https://*.tile.openstreetmap.org; connect-src 'self' https://unpkg.com; font-src 'self' data:; base-uri 'self'; form-action 'self';">
 
   <!-- Leaflet -->
@@ -20,7 +20,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="css/styles.css?v=20260924a" />
+  <link rel="stylesheet" href="css/styles.css?v=20260926a" />
 </head>
 
 <body>
@@ -96,6 +96,10 @@
               </select>
             </div>
             <div class="setting-check-wrap">
+              <input type="checkbox" id="autoScrollToggle" style="width: auto; cursor: pointer;" />
+              <label for="autoScrollToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">自動スクロール</label>
+            </div>
+            <div class="setting-check-wrap">
               <input type="checkbox" id="stationAttrColorToggle" style="width: auto; cursor: pointer;" />
               <label for="stationAttrColorToggle" style="font-size: 12px; color: var(--text-sub); cursor: pointer; white-space: nowrap;">駅属性で塗り分け</label>
             </div>
@@ -129,15 +133,15 @@
   </div>
 
   <!-- JavaScript modules -->
-  <script src="js/config.js?v=20260924a"></script>
-  <script src="js/kdtree.js?v=20260924a"></script>
-  <script src="js/station.js?v=20260924a"></script>
-  <script src="js/map.js?v=20260924a"></script>
-  <script src="js/location.js?v=20260924a"></script>
-  <script src="js/drawing.js?v=20260924a"></script>
-  <script src="js/voronoi.js?v=20260924a"></script>
-  <script src="js/ui.js?v=20260924a"></script>
-  <script src="js/app.js?v=20260924a"></script>
+  <script src="js/config.js?v=20260926a"></script>
+  <script src="js/kdtree.js?v=20260926a"></script>
+  <script src="js/station.js?v=20260926a"></script>
+  <script src="js/map.js?v=20260926a"></script>
+  <script src="js/location.js?v=20260926a"></script>
+  <script src="js/drawing.js?v=20260926a"></script>
+  <script src="js/voronoi.js?v=20260926a"></script>
+  <script src="js/ui.js?v=20260926a"></script>
+  <script src="js/app.js?v=20260926a"></script>
 </body>
 
 </html>

@@ -193,11 +193,19 @@ class MapManager {
     });
   }
 
+  // 駅の選択などで地図を動かすときは、現在地への自動スクロールで引き戻さないよう一時停止する
+  suspendAutoScroll() {
+    if (this.locationManager) {
+      this.locationManager.suspendAutoScroll();
+    }
+  }
+
   // 駅マーカーを配置
   placeStationMarker(station, centerMap) {
     const latlng = [station.lat, station.lng];
 
     if (centerMap) {
+      this.suspendAutoScroll();
       const targetZoom = Math.max(this.map.getZoom(), 13);
       this.map.setView(latlng, targetZoom);
     }
@@ -515,6 +523,7 @@ class MapManager {
     }
 
     const bounds = center.toBounds(radius * 2);
+    this.suspendAutoScroll();
     this.map.fitBounds(bounds, {
       padding: [40, 40],
       animate: true,

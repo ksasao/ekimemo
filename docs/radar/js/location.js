@@ -18,6 +18,61 @@ class LocationManager {
     this.visibilityChangeHandler = null;
     this.isRequestInFlight = false;
     this.watchId = null;
+    this.isAutoScrollSuspended = false;
+    this.defaultZoomOptions = {
+      scrollWheelZoom: map.options.scrollWheelZoom,
+      touchZoom: map.options.touchZoom,
+      doubleClickZoom: map.options.doubleClickZoom,
+    };
+    this.bindUserMapInteractionEvents();
+  }
+
+  // ユーザーによる地図の移動操作を検知して自動スクロールを一時停止する
+  // (movestart はポップアップの自動パンや画面回転でも発火するため使わない)
+  bindUserMapInteractionEvents() {
+    this.map.on('dragstart', () => {
+      this.suspendAutoScroll();
+    });
+
+    this.map.on('keydown', (event) => {
+      const key = event.originalEvent && event.originalEvent.key;
+      if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+        this.suspendAutoScroll();
+      }
+    });
+  }
+
+  isAutoScrollActive() {
+    return this.isTrackingLocation &&
+      !this.isAutoScrollSuspended &&
+      this.uiManager.isAutoScrollEnabled();
+  }
+
+  suspendAutoScroll() {
+    if (!this.isAutoScrollActive()) {
+      return;
+    }
+    this.isAutoScrollSuspended = true;
+    this.updateZoomAnchorMode();
+  }
+
+  handleAutoScrollSettingChange() {
+    if (this.uiManager.isAutoScrollEnabled()) {
+      this.isAutoScrollSuspended = false;
+    }
+    this.updateZoomAnchorMode();
+    if (this.isAutoScrollActive() && this.lastLatLng) {
+      this.map.panTo(this.lastLatLng);
+    }
+  }
+
+  // 追従中は現在地(=画面中心)を基準にズームし、ズームで追従位置がずれないようにする
+  updateZoomAnchorMode() {
+    const active = this.isAutoScrollActive();
+    Object.keys(this.defaultZoomOptions).forEach((key) => {
+      const original = this.defaultZoomOptions[key];
+      this.map.options[key] = active && original ? 'center' : original;
+    });
   }
 
   // ボタンを設定
@@ -40,6 +95,8 @@ class LocationManager {
     }
 
     this.isTrackingLocation = true;
+    this.isAutoScrollSuspended = false;
+    this.updateZoomAnchorMode();
     this.button.classList.add('active');
     this.locationDotsRefreshed = false;
     this.bindVisibilityEvents();
@@ -179,6 +236,7 @@ class LocationManager {
   // 位置情報追跡を停止
   stopTracking() {
     this.isTrackingLocation = false;
+    this.updateZoomAnchorMode();
     if (this.button) {
       this.button.classList.remove('active');
     }
@@ -261,7 +319,7 @@ class LocationManager {
     this.lastAccuracy = resolvedAccuracy;
     this.notifyIfNearestStationChanged(normalized);
 
-    if (panToLocation) {
+    if (panToLocation || this.isAutoScrollActive()) {
       this.map.panTo(normalized);
     }
 

@@ -75,6 +75,7 @@ const CONFIG = {
     timeout: 10000,
     maximumAge: 5000,
     realtimeMaximumAge: 1000,
+    autoScrollEnabledByDefault: true,
     pauseWhenHidden: true,
     minDistanceForVisualUpdateMeters: 15,
     minAccuracyDeltaForVisualUpdateMeters: 20
