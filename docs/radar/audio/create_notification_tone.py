@@ -21,7 +21,7 @@ def synth(freq, duration, start=0.0, volume=0.9, fade_out_duration=0.06):
             fade = 1.0 - fade_index
             v *= fade
 
-        out.append(int(max(-32768, min(32767, v * volume * 12000))))
+        out.append(int(max(-32768, min(32767, v * volume * 24000))))
     return out
 
 

@@ -14,7 +14,7 @@ class UIManager {
     this.notificationAudioElement = null;
     this.notificationAudioBuffer = null;
     this.notificationAudioBufferPromise = null;
-    this.notificationAudioDataUri = './audio/notification-tone.wav';
+    this.notificationAudioDataUri = './audio/notification-tone.wav?v=20260926d';
     this.audioUnlockBound = false;
     this.serviceWorkerControllerChanged = false;
     this.serviceWorkerUpdateHooksInitialized = false;
@@ -780,7 +780,7 @@ class UIManager {
     accompaniment.forEach((note) => {
       const gainNode = this.audioContext.createGain();
       gainNode.gain.setValueAtTime(0.0001, now + note.delay);
-      gainNode.gain.exponentialRampToValueAtTime(0.036, now + note.delay + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.072, now + note.delay + 0.01);
       gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration + fadeOutDuration);
 
       const oscillator = this.audioContext.createOscillator();
@@ -798,7 +798,7 @@ class UIManager {
     melody.forEach((note) => {
       const gainNode = this.audioContext.createGain();
       gainNode.gain.setValueAtTime(0.0001, now + note.delay);
-      gainNode.gain.exponentialRampToValueAtTime(0.18, now + note.delay + 0.012);
+      gainNode.gain.exponentialRampToValueAtTime(0.36, now + note.delay + 0.012);
       gainNode.gain.exponentialRampToValueAtTime(0.0001, now + note.delay + note.duration + fadeOutDuration);
 
       const oscillator = this.audioContext.createOscillator();
