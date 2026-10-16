@@ -98,6 +98,7 @@ class LocationManager {
     this.isAutoScrollSuspended = false;
     this.updateZoomAnchorMode();
     this.button.classList.add('active');
+    this.uiManager.setLocationIntervalButtonsVisible(true);
     this.locationDotsRefreshed = false;
     this.bindVisibilityEvents();
 
@@ -240,6 +241,7 @@ class LocationManager {
     if (this.button) {
       this.button.classList.remove('active');
     }
+    this.uiManager.setLocationIntervalButtonsVisible(false);
 
     this.stopLocationUpdates();
     this.unbindVisibilityEvents();

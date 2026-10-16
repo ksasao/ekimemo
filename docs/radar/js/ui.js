@@ -30,6 +30,7 @@ class UIManager {
     this.nearestStationNotifyToggle = document.getElementById('nearestStationNotifyToggle');
     this.locationUpdateIntervalSelect = document.getElementById('locationUpdateIntervalSelect');
     this.autoScrollToggle = document.getElementById('autoScrollToggle');
+    this.locationIntervalButtons = document.getElementById('locationIntervalButtons');
     this.stationAttrColorToggle = document.getElementById('stationAttrColorToggle');
     this.stationMemoLabelToggle = document.getElementById('stationMemoLabelToggle');
     this.exportStationMemosButton = document.getElementById('exportStationMemosBtn');
@@ -175,6 +176,24 @@ class UIManager {
 
     if (this.locationUpdateIntervalSelect) {
       this.locationUpdateIntervalSelect.addEventListener('change', () => {
+        this.updateLocationIntervalButtons();
+        if (callbacks.onLocationUpdateIntervalChange) {
+          callbacks.onLocationUpdateIntervalChange(this.getLocationUpdateInterval());
+        }
+      });
+    }
+
+    if (this.locationIntervalButtons) {
+      this.locationIntervalButtons.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-interval]');
+        if (!button) {
+          return;
+        }
+        const intervalMs = Number(button.dataset.interval);
+        if (intervalMs === this.getLocationUpdateInterval()) {
+          return;
+        }
+        this.setLocationUpdateInterval(intervalMs);
         if (callbacks.onLocationUpdateIntervalChange) {
           callbacks.onLocationUpdateIntervalChange(this.getLocationUpdateInterval());
         }
@@ -440,6 +459,24 @@ class UIManager {
     const options = CONFIG.location.updateIntervalOptions;
     const value = options.includes(Number(intervalMs)) ? Number(intervalMs) : CONFIG.location.updateInterval;
     this.locationUpdateIntervalSelect.value = String(value);
+    this.updateLocationIntervalButtons();
+  }
+
+  updateLocationIntervalButtons() {
+    if (!this.locationIntervalButtons) {
+      return;
+    }
+    const current = this.getLocationUpdateInterval();
+    this.locationIntervalButtons.querySelectorAll('button[data-interval]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(Number(button.dataset.interval) === current));
+    });
+  }
+
+  setLocationIntervalButtonsVisible(visible) {
+    if (!this.locationIntervalButtons) {
+      return;
+    }
+    this.locationIntervalButtons.hidden = !visible;
   }
 
   // 0 はリアルタイム(GPS更新イベント駆動)を表す
