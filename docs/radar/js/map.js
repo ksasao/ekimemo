@@ -105,6 +105,8 @@ class MapManager {
     L.tileLayer(CONFIG.map.tileUrl, {
       maxZoom: CONFIG.map.maxZoom,
       attribution: CONFIG.map.attribution,
+      // Service Worker でタイルをキャッシュするため CORS で読み込む(no-cors だと容量が大きく計上される)
+      crossOrigin: true,
     }).addTo(this.map);
 
     // スケール（距離目盛り）を右下に追加
