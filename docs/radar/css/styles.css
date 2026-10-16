@@ -535,8 +535,8 @@ select {
   }
 }
 
-.current-location-marker {
-  animation: pulse 1.5s ease-in-out infinite;
+.current-location-marker.is-pulsing {
+  animation: pulse 1.5s ease-in-out 1;
 }
 
 @media (max-width: 639px) {

@@ -289,11 +289,24 @@ class LocationManager {
       const accuracyDelta = prevAccuracy == null ? Infinity : Math.abs(prevAccuracy - accuracy);
 
       if (movedMeters < minDistance && accuracyDelta < minAccuracyDelta) {
+        // 表示位置は変えないが、位置情報を受け取ったことは示す
+        this.playLocationUpdatePulse();
         return;
       }
     }
 
     this.applyLatLng(latlng, accuracy, panToLocation, false);
+  }
+
+  // 位置情報を受け取るたびにマーカーのパルスを1回だけ再生する
+  playLocationUpdatePulse() {
+    const element = this.currentLocationMarker && this.currentLocationMarker.getElement();
+    if (!element) {
+      return;
+    }
+    element.classList.remove('is-pulsing');
+    void element.offsetWidth;
+    element.classList.add('is-pulsing');
   }
 
   // デバッグ用に手動で位置を設定
@@ -363,6 +376,8 @@ class LocationManager {
         </div>
       `);
     }
+
+    this.playLocationUpdatePulse();
 
     this.recalculateLocationRank();
 
